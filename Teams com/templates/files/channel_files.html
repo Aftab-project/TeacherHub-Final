@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+<!--
+    files/channel_files.html
+    Purpose: Show files shared inside a specific channel.
+-->
+
+{% block title %}Files in #{{ channel.name }} - Team Collaboration Platform{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Files in #{{ channel.name }}</h1>
+    
+    {% if files %}
+    <!-- Channel file table -->
+    <div class="card">
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Uploaded By</th>
+                    <th>Size</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for file in files %}
+                <!-- File metadata + download action -->
+                <tr>
+                    <td>{{ file.filename }}</td>
+                    <td>{{ file.uploader.username }}</td>
+                    <td>{{ (file.file_size / 1024)|int }} KB</td>
+                    <td>
+                        <a href="{{ url_for('files.download_file', file_id=file.id) }}" class="btn btn-sm btn-secondary">Download</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <!-- Empty state -->
+    <div class="card">
+        <div class="card-body" style="text-align: center;">
+            <p>No files in this channel.</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

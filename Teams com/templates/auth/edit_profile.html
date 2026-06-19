@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+<!--
+    auth/edit_profile.html
+    Purpose: Let logged-in user update profile fields.
+    Fields map directly to first_name, last_name, and bio in User model.
+-->
+
+{% block title %}Edit Profile - Team Collaboration Platform{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Medium-width layout for comfortable form editing -->
+    <div style="max-width: 600px;">
+        <h1>Edit Profile</h1>
+        
+        <div class="card">
+            <div class="card-body">
+                <!-- Form submits to /auth/profile/edit -->
+                <form method="POST">
+                    <div class="form-group">
+                        <!-- Pre-filled current value so user can adjust quickly -->
+                        <label for="first_name">First Name</label>
+                        <input type="text" id="first_name" name="first_name" value="{{ current_user.first_name or '' }}">
+                    </div>
+                    
+                    <div class="form-group">
+                        <!-- Pre-filled current value -->
+                        <label for="last_name">Last Name</label>
+                        <input type="text" id="last_name" name="last_name" value="{{ current_user.last_name or '' }}">
+                    </div>
+                    
+                    <div class="form-group">
+                        <!-- Free-text bio for profile context -->
+                        <label for="bio">Bio</label>
+                        <textarea id="bio" name="bio" placeholder="Tell us about yourself...">{{ current_user.bio or '' }}</textarea>
+                    </div>
+                    
+                    <!-- Persist profile changes -->
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

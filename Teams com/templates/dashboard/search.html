@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+<!--
+    dashboard/search.html
+    Purpose: Global message search UI.
+    Displays result list when query has matches.
+-->
+
+{% block title %}Search - Team Collaboration Platform{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Search</h1>
+    
+    <!-- Search form submits as GET so URL keeps query string -->
+    <form method="GET" style="margin-bottom: 2rem;">
+        <div style="display: flex; gap: 1rem;">
+            <input type="text" name="q" value="{{ query or '' }}" placeholder="Search messages..." style="flex: 1;">
+            <button type="submit" class="btn btn-primary">Search</button>
+        </div>
+    </form>
+    
+    <!-- Results state: query provided and messages found -->
+    {% if query and results.messages %}
+    <h2>Messages ({{ results.messages|length }})</h2>
+    <div class="card">
+        {% for message in results.messages %}
+        <div class="message">
+            <div class="message-avatar">{{ message.sender.username[0]|upper }}</div>
+            <div class="message-content">
+                <strong>{{ message.sender.username }}</strong> in #{{ message.channel.name }}<br>
+                {{ message.content[:100] }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    <!-- Empty-result state: query provided but no matches -->
+    {% elif query %}
+    <p>No results found for "{{ query }}"</p>
+    {% endif %}
+</div>
+{% endblock %}

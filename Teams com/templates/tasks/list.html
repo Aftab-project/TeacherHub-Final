@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+<!--
+    tasks/list.html
+    Purpose: Show all tasks for a selected team.
+-->
+
+{% block title %}Tasks - Team Collaboration Platform{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header row with create-task action -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h1>Tasks - {{ team.name }}</h1>
+        <a href="{{ url_for('tasks.create_task', team_id=team.id) }}" class="btn btn-primary">+ Create Task</a>
+    </div>
+    
+    {% if tasks %}
+    <!-- Task table view -->
+    <div class="card">
+        <table>
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Status</th>
+                    <th>Assigned To</th>
+                    <th>Priority</th>
+                    <th>Due Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for task in tasks %}
+                <!-- Each row links to task detail page -->
+                <tr>
+                    <td><a href="{{ url_for('tasks.view_task', task_id=task.id) }}">{{ task.title }}</a></td>
+                    <td><span class="badge badge-info">{{ task.status }}</span></td>
+                    <td>{{ task.assigned_to.username if task.assigned_to else 'Unassigned' }}</td>
+                    <td><span class="badge badge-warning">{{ task.priority }}</span></td>
+                    <td>{{ task.due_date.strftime('%Y-%m-%d') if task.due_date else '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <!-- Empty state -->
+    <div class="card">
+        <div class="card-body" style="text-align: center;">
+            <p>No tasks yet. <a href="{{ url_for('tasks.create_task', team_id=team.id) }}">Create one</a></p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

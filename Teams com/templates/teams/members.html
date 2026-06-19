@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+<!--
+    teams/members.html
+    Purpose: Display team roster with roles and join dates.
+    Owner can remove other members from this page.
+-->
+
+{% block title %}{{ team.name }} Members - Team Collaboration Platform{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Page header with back navigation -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <div>
+            <a href="{{ url_for('teams.view_team', team_id=team.id) }}" style="color: var(--text-secondary); text-decoration: none;">← Back</a>
+            <h1>Team Members</h1>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h3>Members of {{ team.name }}</h3>
+        </div>
+        <!-- Tabular member data for easy scanning -->
+        <table>
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Name</th>
+                    <th>Role</th>
+                    <th>Joined</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for member in members %}
+                <tr>
+                    <td>
+                        <!-- Profile links let admins inspect member details -->
+                        <a href="{{ url_for('auth.view_profile', user_id=member.user.id) }}">
+                            {{ member.user.username }}
+                        </a>
+                    </td>
+                    <td>{{ member.user.first_name or '' }} {{ member.user.last_name or '' }}</td>
+                    <td><span class="badge badge-primary">{{ member.role.name|capitalize }}</span></td>
+                    <td>{{ member.joined_at.strftime('%Y-%m-%d') }}</td>
+                    <td>
+                        <!-- Only owner can remove others; self-remove hidden -->
+                        {% if current_user.id != member.user.id and current_user.id == team.owner_id %}
+                        <form method="POST" action="{{ url_for('teams.remove_member', team_id=team.id, user_id=member.user.id) }}" style="display: inline;">
+                            <button type="submit" class="btn btn-sm btn-secondary" onclick="return confirm('Remove this member?')">Remove</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

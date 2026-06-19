@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+<!--
+    auth/profile.html
+    Purpose: Display a user's public profile and team memberships.
+    Includes quick actions: message user, start video call (if viewing someone else).
+-->
+
+{% block title %}Profile - Team Collaboration Platform{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div style="max-width: 600px;">
+        <!-- Profile heading -->
+        <h1>{{ user.username }}'s Profile</h1>
+
+        <!-- Core profile information card -->
+        <div class="card">
+            <div class="card-body">
+                <p><strong>Username:</strong> {{ user.username }}</p>
+                <p><strong>Email:</strong> {{ user.email }}</p>
+                <!-- Show full name only when present -->
+                {% if user.first_name %}
+                <p><strong>Name:</strong> {{ user.first_name }} {{ user.last_name or '' }}</p>
+                {% endif %}
+                <!-- Show bio only when user provided one -->
+                {% if user.bio %}
+                <p><strong>Bio:</strong> {{ user.bio }}</p>
+                {% endif %}
+                <p><strong>Member Since:</strong> {{ user.created_at.strftime('%B %d, %Y') }}</p>
+            </div>
+        </div>
+
+        <!-- Owner-only action: edit own profile -->
+        {% if current_user.id == user.id %}
+        <a href="{{ url_for('auth.edit_profile') }}" class="btn btn-primary" style="margin-top: 1rem;">Edit Profile</a>
+        {% endif %}
+
+        <!-- Viewer actions when profile belongs to another user -->
+        {% if current_user.id != user.id %}
+        <div style="margin-top: 1rem;">
+            <a href="{{ url_for('messages.view_dm', user_id=user.id) }}" class="btn btn-accent" style="margin-right: 0.5rem;">
+                Message
+            </a>
+            <!-- Starts a 1-to-1 call by POSTing to /calls/<id>/initiate -->
+            <button onclick="initiateVideoCall({{ user.id }})" class="btn btn-primary">
+                Video Call
+            </button>
+        </div>
+        {% endif %}
+
+        <!-- Teams section: all teams this profile user belongs to -->
+        <h3 style="margin-top: 2rem;">Teams</h3>
+        {% if user.teams %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem;">
+            {% for team in user.teams %}
+            <div class="card">
+                <div class="card-body">
+                    <h4>{{ team.name }}</h4>
+                    <a href="{{ url_for('teams.view_team', team_id=team.id) }}" class="btn btn-sm btn-accent">View</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p>Not a member of any teams yet.</p>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// Start a 1-to-1 call and redirect to room on success
+async function initiateVideoCall(calleeId) {
+    try {
+        // Ask backend to create call record and token
+        const response = await fetch(`/calls/${calleeId}/initiate`, {
+            method: 'POST'
+        });
+
+        // Parse JSON response payload
+        const data = await response.json();
+
+        // Show backend error message if initiation fails
+        if (!response.ok) {
+            alert(data.error || 'Failed to initiate call');
+            return;
+        }
+
+        // Navigate to WebRTC room page
+        window.location.href = `/calls/room/${data.call_token}`;
+    } catch (error) {
+        console.error('Error initiating call:', error);
+        alert('Failed to initiate call.');
+    }
+}
+</script>
+{% endblock %}

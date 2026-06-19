@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+
+<!-- 
+  teams/view.html - Team overview page
+  
+  Shows:
+  - Team name and description
+  - All channels in the team
+  - Team info (owner, member count, invite code)
+  - Group call button
+  - Admin controls: Create channel, Invite members
+  
+  Two tabs:
+  - Overview (this page)
+  - Members (manage team members)
+-->
+
+{% block title %}{{ team.name }} - Team Collaboration Platform{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- ===== HEADER: TEAM TITLE + BUTTONS ===== -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <!-- Left: Team name and description -->
+        <div>
+            <!-- Team name (large heading) -->
+            <h1>{{ team.name }}</h1>
+            <!-- Optional description of what this team is for -->
+            {% if team.description %}
+            <p style="color: var(--text-secondary);">{{ team.description }}</p>
+            {% endif %}
+        </div>
+        
+        <!-- Right: Action buttons -->
+        <div style="display: flex; gap: 0.75rem;">
+            <!-- Start group video call with entire team -->
+            <button onclick="startGroupCall({{ team.id }})" class="btn btn-primary">📞 Start Group Call</button>
+            <!-- Go to team settings (admin only) -->
+            <a href="{{ url_for('teams.team_settings', team_id=team.id) }}" class="btn btn-secondary">⚙️ Settings</a>
+        </div>
+    </div>
+    
+    <!-- ===== TAB NAVIGATION ===== -->
+    <!-- Switch between Overview and Members pages -->
+    <div style="margin-bottom: 2rem; border-bottom: 1px solid var(--border); display: flex; gap: 2rem;">
+        <!-- Overview tab (current page) - highlighted -->
+        <a href="{{ url_for('teams.view_team', team_id=team.id) }}" 
+           style="padding-bottom: 1rem; border-bottom: 2px solid var(--primary); color: var(--primary); text-decoration: none; font-weight: 600;">
+            Overview
+        </a>
+        <!-- Members tab - not highlighted -->
+        <a href="{{ url_for('teams.manage_members', team_id=team.id) }}" 
+           style="padding-bottom: 1rem; color: var(--text-secondary); text-decoration: none;">
+            Members
+        </a>
+    </div>
+    
+    <!-- ===== MAIN CONTENT: TWO-COLUMN LAYOUT ===== -->
+    <div class="row">
+        <!-- ===== LEFT COLUMN: CHANNELS (WIDER) ===== -->
+        <div style="flex: 2;">
+            <!-- Channels card -->
+            <div class="card" style="margin-bottom: 2rem;">
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <!-- Title -->
+                    <h3>Channels</h3>
+                    <!-- Create channel button (admin only) -->
+                    <button class="btn btn-sm btn-primary" onclick="showCreateChannel()">+ Create</button>
+                </div>
+                
+                <!-- List of channels -->
+                <div class="list-group">
+                    {% for channel in channels %}
+                    <!-- Each channel as clickable item -->
+                    <div class="list-group-item">
+                        <!-- Link to channel (shows messages) -->
+                        <a href="{{ url_for('messages.view_channel', channel_id=channel.id) }}">#{{ channel.name }}</a>
+                        <!-- Channel description (if provided) -->
+                        {% if channel.description %}
+                        <small style="color: var(--text-secondary); display: block;">{{ channel.description }}</small>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- ===== RIGHT COLUMN: TEAM INFO + ADMIN TOOLS (NARROWER) ===== -->
+        <div style="flex: 1;">
+            
+            <!-- ───── TEAM INFO CARD ───── -->
+            <!-- Read-only info about the team -->
+            <div class="card">
+                <div class="card-header">
+                    <h4>Team Info</h4>
+                </div>
+                <div class="card-body">
+                    <!-- Who created this team -->
+                    <p><strong>Owner:</strong> {{ team.owner.username }}</p>
+                    <!-- How many members -->
+                    <p><strong>Members:</strong> {{ members|length }}</p>
+                    <!-- How many channels -->
+                    <p><strong>Channels:</strong> {{ channels|length }}</p>
+                    <!-- Public or Private -->
+                    <p><strong>Privacy:</strong> {{ "Public" if team.is_public else "Private" }}</p>
+                    <!-- Invite code for new members -->
+                    <p><strong>Invite Code:</strong></p>
+                    <code style="background-color: var(--bg-secondary); padding: 0.5rem; border-radius: 0.25rem; display: block; word-break: break-all;">{{ team.team_code }}</code>
+                </div>
+            </div>
+
+            <!-- ───── ADMIN SECTION: INVITE MEMBERS ───── -->
+            <!-- Only show if current user is team admin -->
+            {% if is_admin %}
+            <div class="card" style="margin-top: 1rem;">
+                <div class="card-header">
+                    <h4>Invite a User</h4>
+                </div>
+                <div class="card-body">
+                    <!-- Form: Enter username to invite -->
+                    <form method="POST" action="{{ url_for('teams.invite_member', team_id=team.id) }}" style="display: flex; gap: 0.5rem;">
+                        <!-- Username input -->
+                        <input type="text" name="username" placeholder="Username" required style="flex: 1;">
+                        <!-- Send invite button -->
+                        <button type="submit" class="btn btn-primary btn-sm">Send Invite</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- ───── PENDING INVITATIONS ───── -->
+            <!-- Show users we've invited but who haven't accepted yet -->
+            {% if pending_invites %}
+            <div class="card" style="margin-top: 1rem;">
+                <div class="card-header">
+                    <h4>Pending Invitations</h4>
+                </div>
+                <div class="card-body">
+                    <!-- List each pending invite -->
+                    {% for inv in pending_invites %}
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.4rem 0; border-bottom: 1px solid var(--border);">
+                        <!-- Username of invited person -->
+                        <span>{{ inv.invitee.username }}</span>
+                        <!-- Status badge: "Pending" (waiting for them to accept) -->
+                        <span class="badge badge-warning">Pending</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- ===== MODAL: CREATE CHANNEL ===== -->
+    <!-- Hidden popup form for creating a new channel -->
+    <div id="createChannelForm" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 2rem; border-radius: 0.5rem; box-shadow: 0 10px 40px rgba(0,0,0,0.2); z-index: 1000; width: 90%; max-width: 500px;">
+        <h3>Create Channel</h3>
+        
+        <!-- Form to submit to server -->
+        <form method="POST" action="{{ url_for('teams.create_channel', team_id=team.id) }}">
+            <!-- Channel name input -->
+            <div class="form-group">
+                <label for="channel_name">Channel Name</label>
+                <!-- Only lowercase, numbers, hyphens allowed (e.g., #frontend-dev) -->
+                <input type="text" id="channel_name" name="name" required placeholder="general" pattern="[a-z0-9-]*">
+                <small>Lowercase letters, numbers, and hyphens only</small>
+            </div>
+            
+            <!-- Optional description -->
+            <div class="form-group">
+                <label for="channel_desc">Description (Optional)</label>
+                <textarea id="channel_desc" name="description" placeholder="What is this channel for?"></textarea>
+            </div>
+            
+            <!-- Buttons -->
+            <div style="display: flex; gap: 1rem;">
+                <!-- Submit form -->
+                <button type="submit" class="btn btn-primary">Create</button>
+                <!-- Close modal without submitting -->
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('createChannelForm').style.display='none'">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ===== CLIENT-SIDE JAVASCRIPT ===== -->
+<script>
+// ===== SHOW CREATE CHANNEL MODAL =====
+// Make the hidden form visible
+function showCreateChannel() {
+    document.getElementById('createChannelForm').style.display = 'block';
+}
+
+// ===== START GROUP CALL =====
+// Initiate a group video call with entire team
+async function startGroupCall(teamId) {
+    try {
+        // Ask server to create a group call
+        const response = await fetch(`/calls/group/${teamId}/initiate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+        });
+
+        // Parse response
+        const data = await response.json();
+
+        // If error, show message
+        if (!response.ok) {
+            alert(data.error || 'Failed to start group call');
+            return;
+        }
+
+        // Success! Navigate to the call room
+        // Pass the unique call token in the URL
+        window.location.href = `/calls/room/${data.call_token}`;
+    } catch (error) {
+        console.error('Error starting group call:', error);
+        alert('Failed to start group call.');
+    }
+}
+</script>
+{% endblock %}

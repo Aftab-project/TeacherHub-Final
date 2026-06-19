@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+<!--
+    dashboard/index.html
+    Purpose: Main home page after login.
+    Displays summary stats, team list, and recent cross-team activity.
+-->
+
+{% block title %}Dashboard - Team Collaboration Platform{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Hero row: page title + quick action -->
+    <div class="d-flex justify-between align-center page-hero" style="margin-bottom: 2rem;">
+        <h1>Dashboard</h1>
+        <a href="{{ url_for('teams.create_team') }}" class="btn btn-primary">+ Create Team</a>
+    </div>
+    
+    <!-- Top-level metrics card row -->
+    <div class="row stats-grid" style="margin-bottom: 2rem;">
+        <div class="card col stat-card">
+            <div class="card-body">
+                <a href="{{ url_for('teams.list_teams') }}" style="display: block; color: inherit; text-decoration: none;">
+                    <p class="stat-label">Teams</p>
+                    <h3 class="stat-number">{{ teams|length }}</h3>
+                </a>
+            </div>
+        </div>
+        <div class="card col stat-card">
+            <div class="card-body">
+                <a href="{{ url_for('dashboard.notifications') }}" style="display: block; color: inherit; text-decoration: none;">
+                    <p class="stat-label">Unread Notifications</p>
+                    <h3 class="stat-number">{{ unread_notifications }}</h3>
+                </a>
+            </div>
+        </div>
+        <div class="card col stat-card">
+            <div class="card-body">
+                <a href="{{ url_for('messages.direct_hub') }}" style="display: block; color: inherit; text-decoration: none;">
+                    <p class="stat-label">Unread Messages</p>
+                    <h3 class="stat-number">{{ unread_dms }}</h3>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Team membership section -->
+    <h2>Your Teams</h2>
+    {% if teams %}
+    <!-- Show team list when user belongs to at least one team -->
+    <div class="card" style="margin-bottom: 2rem;">
+        <div class="list-group">
+            {% for team in teams %}
+            <div class="list-group-item">
+                <div>
+                    <a href="{{ url_for('teams.view_team', team_id=team.id) }}">
+                        <strong>{{ team.name }}</strong>
+                    </a>
+                    <p style="font-size: 0.875rem; color: var(--text-secondary); margin: 0;">
+                        {{ team.members|length }} members
+                    </p>
+                </div>
+                <span class="badge badge-primary">{{ team.channels|length }} channels</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <!-- Empty state for first-time users -->
+    <div class="card" style="margin-bottom: 2rem;">
+        <div class="card-body" style="text-align: center;">
+            <p>You haven't joined any teams yet.</p>
+            <a href="{{ url_for('teams.join_by_code') }}" class="btn btn-secondary">Join a Team</a>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Recent channel activity across accessible teams -->
+    <h2>Recent Activity</h2>
+    {% if recent_messages %}
+    <div class="card recent-stream">
+        {% for message in recent_messages %}
+        <div class="message">
+            <div class="message-avatar">
+                {{ message.sender.username[0]|upper }}
+            </div>
+            <div class="message-content">
+                <div class="message-header">
+                    <span class="message-author">{{ message.sender.username }}</span>
+                    <span class="message-time">{{ message.created_at.strftime('%I:%M %p') }}</span>
+                </div>
+                <div class="message-text">
+                    <a href="{{ url_for('messages.view_channel', channel_id=message.channel_id) }}#message-{{ message.id }}" style="text-decoration: none; color: inherit;">
+                        {{ message.content[:100] }}{% if message.content|length > 100 %}...{% endif %}
+                    </a>
+                </div>
+                <small style="color: var(--text-tertiary);">
+                    in <a href="{{ url_for('messages.view_channel', channel_id=message.channel_id) }}#message-{{ message.id }}" style="color: inherit; text-decoration: underline;">#{{ message.channel.name }} ({{ message.channel.team.name }})</a>
+                </small>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <!-- Empty state when no recent messages exist -->
+    <div class="card">
+        <div class="card-body" style="text-align: center;">
+            <p>No recent messages. Join a team to get started!</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

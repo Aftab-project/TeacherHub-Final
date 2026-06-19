@@ -1,0 +1,453 @@
+﻿{% extends "base.html" %}
+
+<!-- 
+  calls/room.html - Live video call interface
+  
+  This page shows during an active video call.
+  Supports:
+  - 1-to-1 calls (picture-in-picture layout)
+  - Group calls (grid layout with multiple participants)
+  
+  Features:
+  - WebRTC peer-to-peer video
+  - Socket.IO signaling (exchanging offer/answer)
+  - Mute/stop controls
+  - Live transcription (speech-to-text)
+  - Call summary generation
+-->
+
+{% block title %}Video Call{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 1100px;">
+
+    <!-- ===== HIDDEN METADATA FOR JAVASCRIPT ===== -->
+    <!-- These values pass server data to JavaScript client -->
+    <input type="hidden" id="callToken"     value="{{ call.call_token }}">        <!-- Unique call ID -->
+    <input type="hidden" id="currentUserId" value="{{ current_user.id }}">        <!-- Current user's ID -->
+    <input type="hidden" id="isCaller"      value="{{ 'true' if is_caller else 'false' }}">  <!-- Am I the caller? -->
+    <input type="hidden" id="callStatus"    value="{{ call.status }}">            <!-- pending/active/ended -->
+    <input type="hidden" id="callType"      value="{{ call.call_type }}">        <!-- 'one-to-one' or 'group' -->
+
+    <!-- ===== MAIN LAYOUT ===== -->
+    <!-- Two-column layout: Videos on left, transcript on right -->
+    <div style="display: flex; gap: 1rem; align-items: flex-start; flex-wrap: wrap;">
+
+        <!-- ===== LEFT COLUMN: VIDEO + CONTROLS ===== -->
+        <div style="flex: 1 1 560px; min-width: 300px;">
+
+            <!-- ───── STATUS BAR ───── -->
+            <!-- Shows who we're calling and current status -->
+            <div class="card" style="margin-bottom: 0.8rem; padding: 0.75rem 1rem; display: flex; align-items: center; justify-content: space-between; border-radius: 12px;">
+                <div>
+                    <!-- GROUP CALL: Show team name and participant count -->
+                    {% if call.call_type == 'group' %}
+                    <span style="font-weight: 700;">Group Call - {{ call.team.name }} ({{ other_users|length + 1 }} participants)</span>
+                    <!-- 1-TO-1 CALL: Show other person's name -->
+                    {% else %}
+                    <span style="font-weight: 700;">Calling <em>{{ other_user.username }}</em></span>
+                    {% endif %}
+                    <!-- Call duration timer (hidden until call starts) -->
+                    <span id="callDuration" style="display: none; margin-left: 1rem; font-size: 0.85rem; color: var(--text-secondary);">0:00</span>
+                </div>
+                <!-- Status badge: Pending, Active, Completed, etc -->
+                <span class="badge badge-warning" id="statusBadge">{{ call.status | capitalize }}</span>
+            </div>
+
+            <!-- ───── VIDEO AREA ───── -->
+            <div style="position: relative; width: 100%; aspect-ratio: 16/9; background: #111; border-radius: 16px; overflow: hidden; margin-bottom: 0.8rem; box-shadow: var(--shadow-md);">
+                
+                <!-- GROUP CALL LAYOUT: Grid of videos -->
+                {% if call.call_type == 'group' %}
+                <div id="groupVideoGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 0.5rem; width: 100%; height: 100%; padding: 0.5rem; background: #111;">
+                    <!-- Remote videos added dynamically by JavaScript -->
+                    <div id="remoteVideosContainer" style="contents;"></div>
+                    
+                    <!-- My own video (local) -->
+                    <div style="position: relative; border-radius: 12px; overflow: hidden; border: 2px solid rgba(255,255,255,0.3); background: #222;">
+                        <!-- Video element for local media stream -->
+                        <video id="localVideo" playsinline autoplay muted style="width:100%;height:100%;object-fit:cover;transform:scaleX(-1);"></video>
+                        <!-- Placeholder if video hasn't started yet: show initials -->
+                        <div id="localNoVideo" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#2a2a2a;color:#fff;">
+                            <div style="font-size:2rem;font-weight:800;">{{ current_user.username[0]|upper }}</div>
+                            <p style="font-size:0.8rem;margin:0.3rem 0 0 0;">You</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 1-TO-1 CALL LAYOUT: Picture-in-picture (remote full, local corner) -->
+                {% else %}
+                <!-- Remote video (fills entire area) -->
+                <video id="remoteVideo" playsinline autoplay muted style="width:100%;height:100%;object-fit:cover;"></video>
+                <!-- Placeholder if remote video hasn't started: show their name and initials -->
+                <div id="remoteNoVideo" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#1C1917,#292524);color:#fff;gap:0.5rem;">
+                    <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--primary-light),var(--primary-dark));display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:800;">{{ other_user.username[0]|upper }}</div>
+                    <p style="margin:0;font-weight:600;">{{ other_user.username }}</p>
+                    <p style="margin:0;font-size:0.8rem;opacity:0.6;">Waiting for video…</p>
+                </div>
+
+                <!-- Local video (picture-in-picture: small corner box) -->
+                <!-- Only in 1-to-1 calls (not needed in group grid layout) -->
+                <div style="position:absolute;bottom:12px;right:12px;width:160px;height:110px;border-radius:10px;overflow:hidden;border:2px solid rgba(255,255,255,0.3);background:#222;z-index:2;">
+                    <video id="localVideo" playsinline autoplay muted style="width:100%;height:100%;object-fit:cover;transform:scaleX(-1);"></video>
+                    <!-- Placeholder: show initials if video not ready -->
+                    <div id="localNoVideo" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#2a2a2a;color:#fff;">
+                        <div style="font-size:1.4rem;font-weight:800;">{{ current_user.username[0]|upper }}</div>
+                        <p style="font-size:0.7rem;margin:0;opacity:0.7;">You</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- ───── PENDING CONTROLS (Callee Only, 1-to-1) ───── -->
+            <!-- Show ONLY if: I'm receiving the call (not the caller) AND it's 1-to-1 -->
+            <!-- Let caller decide if they want to answer before call connects -->
+            <div id="pendingControls" style="display: {{ 'none' if is_caller or call.call_type == 'group' else 'block' }}; text-align:center; margin-bottom: 0.8rem;" class="card card-body">
+                <p style="font-weight:700;margin-bottom:0.75rem;">Incoming call from {{ other_user.username if other_user else 'Team' }}</p>
+                <div style="display:flex;gap:0.6rem;justify-content:center;">
+                    <!-- Accept: Start call, show video controls -->
+                    <button id="acceptCall" class="btn btn-success">✓ Accept</button>
+                    <!-- Decline: Reject call, go back -->
+                    <button id="rejectCall" class="btn btn-danger">✕ Decline</button>
+                </div>
+            </div>
+
+            <!-- ───── ACTIVE CALL CONTROLS ───── -->
+            <!-- Show ONLY if: Call is active (for caller OR if call already accepted) -->
+            <div id="callControls" style="display: {{ 'block' if is_caller or call.status == 'active' else 'none' }}; text-align:center;" class="card card-body">
+                <div style="display:flex;gap:0.6rem;justify-content:center;flex-wrap:wrap;">
+                    <!-- Mute/unmute audio -->
+                    <button id="toggleAudio"     class="btn btn-secondary">🎤 Mute</button>
+                    <!-- Stop/start video -->
+                    <button id="toggleVideo"     class="btn btn-secondary">📹 Stop</button>
+                    <!-- Open transcript panel -->
+                    <button id="toggleTranscript" class="btn btn-secondary" onclick="toggleTranscript()">📝 Transcript</button>
+                    <!-- End the call -->
+                    <button id="endCall"         class="btn btn-danger">📞 End Call</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== RIGHT COLUMN: TRANSCRIPT PANEL ===== -->
+        <!-- Shows live speech-to-text and call summary -->
+        <div id="transcriptPanel" style="flex: 0 0 320px; display: none; flex-direction: column; gap: 0.6rem;">
+            
+            <!-- Transcript log card -->
+            <div class="card">
+                <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">
+                    <span style="font-weight:700;font-size:0.95rem;">Live Transcript</span>
+                    <!-- Red blinking indicator when recording -->
+                    <span id="recIndicator" style="display:none;width:10px;height:10px;border-radius:50%;background:var(--danger);animation:blink 1s infinite;"></span>
+                </div>
+                <!-- Log area: grows, scrolls, auto-scrolls to bottom -->
+                <div class="card-body" style="padding: 0.6rem;">
+                    <div id="transcriptLog" style="height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:0.35rem;font-size:0.82rem;"></div>
+                </div>
+                <!-- Controls: Start/Stop recording, Summarize -->
+                <div class="card-footer" style="display:flex;gap:0.5rem;">
+                    <!-- Start speech recognition -->
+                    <button id="startSpeech"  class="btn btn-primary btn-sm" onclick="startSpeechCapture()" style="flex:1;">🎙 Start</button>
+                    <!-- Stop speech recognition -->
+                    <button id="stopSpeech"   class="btn btn-secondary btn-sm" onclick="stopSpeechCapture()" style="flex:1;display:none;">⏹ Stop</button>
+                    <!-- Generate AI summary of transcript -->
+                    <button id="summarizeBtn" class="btn btn-accent btn-sm" onclick="requestSummary()" style="flex:1;">✨ Summarize</button>
+                </div>
+            </div>
+
+            <!-- Summary display card (shown when summary available) -->
+            <div id="summaryCard" class="card" style="display:none;">
+                <div class="card-header"><span style="font-weight:700;font-size:0.95rem;">Call Summary</span></div>
+                <div class="card-body">
+                    <!-- AI-generated summary of what was discussed -->
+                    <p id="summaryText" style="font-size:0.85rem;line-height:1.6;margin:0;white-space:pre-wrap;"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Back link -->
+    <div style="margin-top:0.75rem;">
+        <a href="{{ url_for('dashboard.index') }}" style="font-size:0.8rem;color:var(--text-tertiary);">← Back to Dashboard</a>
+    </div>
+</div>
+
+<!-- ===== ANIMATION FOR RECORDING INDICATOR ===== -->
+<style>
+/* Blinking animation for red recording dot */
+@keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0;} }
+</style>
+
+<!-- ===== WEBRTC & SOCKET.IO LIBRARIES ===== -->
+<!-- Socket.IO: For signaling (exchanging WebRTC offer/answer) -->
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<!-- Custom video-call.js: Handles WebRTC peer connection setup -->
+<script src="{{ url_for('static', filename='js/video-call.js') }}"></script>
+
+<!-- ===== TRANSCRIPT & SUMMARY LOGIC ===== -->
+<script>
+// Get call token from hidden input
+// Used for all API calls to identify which call we're talking about
+const CALL_TOKEN = document.getElementById('callToken').value;
+
+// ===== TRANSCRIPT PANEL TOGGLE =====
+// Show/hide the transcript panel on the right
+function toggleTranscript() {
+    const panel = document.getElementById('transcriptPanel');
+    const isOpen = panel.style.display !== 'none';  // Check if currently open
+    
+    if (isOpen) {
+        // Close it
+        panel.style.display = 'none';
+    } else {
+        // Open it and load any existing transcript
+        panel.style.display = 'flex';
+        loadTranscript();
+    }
+}
+
+// ===== LOAD EXISTING TRANSCRIPT =====
+// Fetch transcript segments and summary from server
+async function loadTranscript() {
+    try {
+        // Ask server: Get transcript for this call
+        const res = await fetch(`/calls/${CALL_TOKEN}/transcript`);
+        if (!res.ok) return;
+        
+        // Parse response
+        const data = await res.json();
+        
+        // Display each transcript segment
+        data.segments.forEach(appendSegment);
+        
+        // Display summary if it exists
+        if (data.summary) showSummary(data.summary);
+    } catch(e) { 
+        console.warn('Transcript load error', e); 
+    }
+}
+
+// ===== APPEND TRANSCRIPT SEGMENT =====
+// Add one line to the transcript log
+// Example: "[alice] Hello, are you there?"
+function appendSegment(seg) {
+    const log = document.getElementById('transcriptLog');
+    const wrap = document.createElement('div');
+    
+    // Style: light background, rounded corners
+    wrap.style.cssText = 'padding:0.3rem 0.45rem;border-radius:6px;background:var(--bg-secondary);';
+    
+    // Content: speaker name, timestamp, text
+    wrap.innerHTML = `
+        <span style="font-weight:700;color:var(--primary-dark);">${seg.speaker}</span>
+        <span style="color:var(--text-tertiary);font-size:0.72rem;margin-left:0.35rem;">${seg.time}</span>
+        <div style="margin-top:0.15rem;">${seg.text}</div>`;
+    
+    // Add to log
+    log.appendChild(wrap);
+    
+    // Auto-scroll to bottom so user sees latest
+    log.scrollTop = log.scrollHeight;
+}
+
+// ===== WEB SPEECH API SETUP =====
+// Browser's built-in speech recognition (converts audio to text)
+let recognition = null;
+
+// ===== START SPEECH CAPTURE =====
+// Begin listening for user's voice and converting to text
+function startSpeechCapture() {
+    // Get browser's speech recognition API
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    // Check if browser supports speech recognition
+    if (!SR) { 
+        alert('Speech Recognition is not supported in this browser. Try Chrome.'); 
+        return; 
+    }
+
+    // Create recognizer instance
+    recognition = new SR();
+    recognition.continuous = true;            // Keep listening
+    recognition.interimResults = false;        // Only send final results
+    recognition.lang = 'en-US';                // Language: English
+
+    // When we get speech result
+    recognition.onresult = async (e) => {
+        // Loop through results (may have multiple at once)
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+            // Only process final results (not interim guesses)
+            if (e.results[i].isFinal) {
+                const text = e.results[i][0].transcript.trim();
+                
+                // Skip if empty
+                if (!text) continue;
+                
+                // Add to transcript panel immediately (optimistic)
+                appendSegment({ 
+                    speaker: 'You', 
+                    text, 
+                    time: new Date().toLocaleTimeString() 
+                });
+                
+                // Send to server to save in database
+                await fetch(`/calls/${CALL_TOKEN}/transcript`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text })
+                });
+            }
+        }
+    };
+
+    // Error handling
+    recognition.onerror = (e) => console.warn('Speech error', e.error);
+    
+    // When recognition stops
+    recognition.onend = () => {
+        // Auto-restart if user hasn't manually stopped
+        if (document.getElementById('stopSpeech').style.display !== 'none') {
+            recognition.start();
+        }
+    };
+
+    // Start listening
+    recognition.start();
+                <div class="card-footer" style="display:flex;gap:0.5rem;">
+                    <button id="startSpeech"  class="btn btn-primary btn-sm" onclick="startSpeechCapture()" style="flex:1;">🎙 Start</button>
+                    <button id="stopSpeech"   class="btn btn-secondary btn-sm" onclick="stopSpeechCapture()" style="flex:1;display:none;">⏹ Stop</button>
+                    <button id="summarizeBtn" class="btn btn-accent btn-sm" onclick="requestSummary()" style="flex:1;">✨ Summarize</button>
+                </div>
+            </div>
+
+            <div id="summaryCard" class="card" style="display:none;">
+                <div class="card-header"><span style="font-weight:700;font-size:0.95rem;">Call Summary</span></div>
+                <div class="card-body">
+                    <p id="summaryText" style="font-size:0.85rem;line-height:1.6;margin:0;white-space:pre-wrap;"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div style="margin-top:0.75rem;">
+        <a href="{{ url_for('dashboard.index') }}" style="font-size:0.8rem;color:var(--text-tertiary);">← Back to Dashboard</a>
+    </div>
+</div>
+
+<style>
+@keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0;} }
+</style>
+
+<!-- WebRTC + Socket.IO -->
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="{{ url_for('static', filename='js/video-call.js') }}"></script>
+
+<script>
+// ── Transcript panel toggle ──────────────────────────────────────────
+const CALL_TOKEN = document.getElementById('callToken').value;
+
+function toggleTranscript() {
+    const panel = document.getElementById('transcriptPanel');
+    const open  = panel.style.display !== 'none';
+    panel.style.display = open ? 'none' : 'flex';
+    if (!open) loadTranscript();
+}
+
+// ── Load existing segments ───────────────────────────────────────────
+async function loadTranscript() {
+    try {
+        const res = await fetch(`/calls/${CALL_TOKEN}/transcript`);
+        if (!res.ok) return;
+        const data = await res.json();
+        data.segments.forEach(appendSegment);
+        if (data.summary) showSummary(data.summary);
+    } catch(e) { console.warn('Transcript load error', e); }
+}
+
+function appendSegment(seg) {
+    const log  = document.getElementById('transcriptLog');
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'padding:0.3rem 0.45rem;border-radius:6px;background:var(--bg-secondary);';
+    wrap.innerHTML = `<span style="font-weight:700;color:var(--primary-dark);">${seg.speaker}</span>
+                      <span style="color:var(--text-tertiary);font-size:0.72rem;margin-left:0.35rem;">${seg.time}</span>
+                      <div style="margin-top:0.15rem;">${seg.text}</div>`;
+    log.appendChild(wrap);
+    log.scrollTop = log.scrollHeight;
+}
+
+// ── Web Speech API ───────────────────────────────────────────────────
+let recognition = null;
+
+function startSpeechCapture() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { alert('Speech Recognition is not supported in this browser. Try Chrome.'); return; }
+
+    recognition = new SR();
+    recognition.continuous   = true;
+    recognition.interimResults = false;
+    recognition.lang         = 'en-US';
+
+    recognition.onresult = async (e) => {
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+            if (e.results[i].isFinal) {
+                const text = e.results[i][0].transcript.trim();
+                if (!text) continue;
+                // Append optimistically
+                appendSegment({ speaker: 'You', text, time: new Date().toLocaleTimeString() });
+                // Send to backend
+                await fetch(`/calls/${CALL_TOKEN}/transcript`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text })
+                });
+            }
+        }
+    };
+
+    recognition.onerror = (e) => console.warn('Speech error', e.error);
+    recognition.onend   = () => {
+        // Auto-restart if not manually stopped
+        if (document.getElementById('stopSpeech').style.display !== 'none') {
+            recognition.start();
+        }
+    };
+
+    recognition.start();
+    document.getElementById('startSpeech').style.display  = 'none';
+    document.getElementById('stopSpeech').style.display   = '';
+    document.getElementById('recIndicator').style.display = '';
+}
+
+function stopSpeechCapture() {
+    if (recognition) { recognition.stop(); recognition = null; }
+    document.getElementById('startSpeech').style.display  = '';
+    document.getElementById('stopSpeech').style.display   = 'none';
+    document.getElementById('recIndicator').style.display = 'none';
+}
+
+// ── Summarize ────────────────────────────────────────────────────────
+async function requestSummary() {
+    const btn = document.getElementById('summarizeBtn');
+    btn.disabled = true;
+    btn.textContent = '…';
+    try {
+        const res = await fetch(`/calls/${CALL_TOKEN}/summarize`, { method: 'POST' });
+        const data = await res.json();
+        showSummary(data.summary || 'No content to summarize yet.');
+    } catch(e) {
+        showSummary('Could not generate summary.');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '✨ Summarize';
+    }
+}
+
+function showSummary(text) {
+    document.getElementById('summaryCard').style.display = '';
+    document.getElementById('summaryText').textContent  = text || '(empty)';
+}
+
+// Stop speech on call end
+document.addEventListener('callEnded', stopSpeechCapture);
+</script>
+
+{% endblock %}

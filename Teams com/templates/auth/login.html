@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+<!--
+    auth/login.html
+    Purpose: User sign-in page.
+    Flow: User enters username/email + password -> POST to auth.login route.
+-->
+
+{% block title %}Login - Team Collaboration Platform{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Centered login card for focused auth UI -->
+    <div style="max-width: 400px; margin: 0 auto;">
+        <!-- Page heading -->
+        <h1 style="text-align: center; margin-bottom: 2rem;">Welcome Back</h1>
+        
+        <div class="card">
+            <div class="card-body">
+                <!-- Login form submits to current URL (/auth/login) -->
+                <form method="POST">
+                    <div class="form-group">
+                        <!-- Single input supports username or email -->
+                        <label for="username_or_email">Username or Email</label>
+                        <input type="text" id="username_or_email" name="username_or_email" required placeholder="your username or email">
+                    </div>
+                    
+                    <div class="form-group">
+                        <!-- Password field is masked by browser -->
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" required placeholder="your password">
+                    </div>
+                    
+                    <!-- Primary action: attempt sign-in -->
+                    <button type="submit" class="btn btn-primary btn-block">Login</button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Secondary navigation to registration page -->
+        <p style="text-align: center; margin-top: 1.5rem;">
+            Don't have an account? <a href="{{ url_for('auth.register') }}">Register here</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

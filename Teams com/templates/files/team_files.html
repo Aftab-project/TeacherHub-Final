@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+<!--
+    files/team_files.html
+    Purpose: Show files shared at team scope.
+-->
+
+{% block title %}Team Files - Team Collaboration Platform{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Files - {{ team.name }}</h1>
+    
+    {% if files %}
+    <!-- Team file table -->
+    <div class="card" style="margin-bottom: 2rem;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Uploaded By</th>
+                    <th>Size</th>
+                    <th>Date</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for file in files %}
+                <!-- Each file row includes download action -->
+                <tr>
+                    <td>{{ file.filename }}</td>
+                    <td>{{ file.uploader.username }}</td>
+                    <td>{{ (file.file_size / 1024)|int }} KB</td>
+                    <td>{{ file.created_at.strftime('%Y-%m-%d') }}</td>
+                    <td>
+                        <a href="{{ url_for('files.download_file', file_id=file.id) }}" class="btn btn-sm btn-secondary">Download</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <!-- Empty state when no uploads exist -->
+    <div class="card">
+        <div class="card-body" style="text-align: center;">
+            <p>No files uploaded yet.</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

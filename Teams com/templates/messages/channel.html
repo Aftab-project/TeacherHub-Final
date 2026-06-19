@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+<!--
+    messages/channel.html
+    Purpose: Team channel chat interface.
+    Shows message history and composer for new messages.
+-->
+
+{% block title %}#{{ channel.name }} - Team Collaboration Platform{% endblock %}
+
+{% block content %}
+<div class="container chat-shell">
+    <!-- Channel header: team breadcrumb + channel metadata -->
+    <div class="card channel-header-card">
+        <div class="card-body channel-header">
+            <div>
+                <a href="{{ url_for('teams.view_team', team_id=channel.team_id) }}" class="channel-back-link">← {{ channel.team.name }}</a>
+                <h1>#{{ channel.name }}</h1>
+                {% if channel.description %}
+                <p class="channel-subtitle">{{ channel.description }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="card chat-pane">
+        <div class="card-body chat-scroll">
+            <!-- Message timeline -->
+            {% if messages.items %}
+                {% for message in messages.items %}
+                <!-- Own messages are styled/aligned differently -->
+                <div id="message-{{ message.id }}" class="chat-row {% if message.sender_id == current_user.id %}chat-row-own{% endif %}">
+                    {% if message.sender_id != current_user.id %}
+                    <div class="message-avatar">{{ message.sender.username[0]|upper }}</div>
+                    {% endif %}
+
+                    <div class="chat-bubble-wrap {% if message.sender_id == current_user.id %}chat-bubble-wrap-own{% endif %}">
+                        <div class="chat-meta">
+                            <span class="message-author">{{ message.sender.first_name or message.sender.username }}</span>
+                            <span class="message-time">{{ message.created_at.strftime('%I:%M %p') }}</span>
+                        </div>
+                        <div class="chat-bubble {% if message.sender_id == current_user.id %}chat-bubble-own{% endif %}">
+                            <div class="message-text">{{ message.content }}</div>
+                            <!-- Visual marker when message was edited -->
+                            {% if message.is_edited %}
+                            <small class="chat-edited">(edited)</small>
+                            {% endif %}
+                        </div>
+                        <!-- Owner-only message actions -->
+                        {% if message.sender_id == current_user.id %}
+                        <div class="message-actions">
+                            <button onclick="editMessage({{ message.id }})" class="btn btn-sm btn-secondary">Edit</button>
+                            <form method="POST" action="{{ url_for('messages.delete_message', message_id=message.id) }}" style="display: inline;">
+                                <button type="submit" class="btn btn-sm btn-secondary" onclick="return confirm('Delete this message?')">Delete</button>
+                            </form>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    {% if message.sender_id == current_user.id %}
+                    <div class="message-avatar">{{ message.sender.username[0]|upper }}</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            {% else %}
+            <!-- Empty state when channel has no messages yet -->
+            <p class="chat-empty">No messages yet. Start the conversation!</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Message composer -->
+    <div class="card chat-composer-card">
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('messages.send_message', channel_id=channel.id) }}" class="chat-composer-form">
+                <textarea name="content" placeholder="Type a message... (Mention users with @username)" required maxlength="5000" class="chat-composer-input"></textarea>
+                <button type="submit" class="btn btn-primary">Send</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

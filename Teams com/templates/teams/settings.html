@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+<!--
+    teams/settings.html
+    Purpose: Admin settings for team metadata and invite code rotation.
+-->
+
+{% block title %}Team Settings - Team Collaboration Platform{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Constrained width keeps settings form readable -->
+    <div style="max-width: 600px;">
+        <h1>Team Settings</h1>
+        <a href="{{ url_for('teams.view_team', team_id=team.id) }}" style="color: var(--text-secondary);">← Back</a>
+        
+        <div class="card" style="margin-top: 2rem;">
+            <div class="card-body">
+                <!-- Main settings form -->
+                <form method="POST">
+                    <div class="form-group">
+                        <label for="name">Team Name</label>
+                        <input type="text" id="name" name="name" value="{{ team.name }}" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <textarea id="description" name="description">{{ team.description or '' }}</textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" name="is_public" {% if team.is_public %}checked{% endif %}>
+                            Public team
+                        </label>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </form>
+                
+                <hr style="margin: 2rem 0;">
+                
+                <!-- Invite code block for easy copy/share -->
+                <h3>Invite Code</h3>
+                <p>Share this code with others to let them join your team:</p>
+                <code style="background-color: var(--bg-secondary); padding: 1rem; display: block; margin: 1rem 0; border-radius: 0.5rem; font-size: 1.25rem; text-align: center;">{{ team.team_code }}</code>
+                
+                <!-- Separate POST with hidden flag to request code regeneration -->
+                <form method="POST" style="display: inline;">
+                    <input type="hidden" name="regen_code" value="1">
+                    <button type="submit" class="btn btn-secondary" onclick="return confirm('Generate a new code? Old code will stop working.')">Regenerate Code</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

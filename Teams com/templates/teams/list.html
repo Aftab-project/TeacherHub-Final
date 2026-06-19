@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+<!--
+    teams/list.html
+    Purpose: Show all teams current user belongs to.
+    Includes quick actions to create team or join by invite code.
+-->
+
+{% block title %}Teams - Team Collaboration Platform{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header row with primary team actions -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h1>Your Teams</h1>
+        <div style="display: flex; gap: 1rem;">
+            <a href="{{ url_for('teams.create_team') }}" class="btn btn-primary">+ Create Team</a>
+            <a href="{{ url_for('teams.join_by_code') }}" class="btn btn-secondary">Join with Code</a>
+        </div>
+    </div>
+    
+    <!-- Main state: user has teams -->
+    {% if teams %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
+        {% for team in teams %}
+        <!-- Team card summary -->
+        <div class="card">
+            <div class="card-body">
+                <h3><a href="{{ url_for('teams.view_team', team_id=team.id) }}">{{ team.name }}</a></h3>
+                {% if team.description %}
+                <!-- Truncated description keeps cards compact -->
+                <p style="color: var(--text-secondary); font-size: 0.875rem;">{{ team.description|truncate(80) }}</p>
+                {% endif %}
+                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); display: flex; justify-content: space-between; color: var(--text-secondary); font-size: 0.875rem;">
+                    <span>👥 {{ team.members|length }} members</span>
+                    <span>💬 {{ team.channels|length }} channels</span>
+                </div>
+                <a href="{{ url_for('teams.view_team', team_id=team.id) }}" class="btn btn-sm btn-accent" style="width: 100%; margin-top: 1rem;">Open Team</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <!-- Empty state for users without any team membership -->
+    <div class="card" style="text-align: center; padding: 3rem;">
+        <h2>No Teams Yet</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">You haven't created or joined any teams.</p>
+        <div style="display: flex; gap: 1rem; justify-content: center;">
+            <a href="{{ url_for('teams.create_team') }}" class="btn btn-primary">Create a Team</a>
+            <a href="{{ url_for('teams.join_by_code') }}" class="btn btn-secondary">Join a Team</a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+<!--
+    tasks/create.html
+    Purpose: Create a new task for a team and optionally assign it.
+-->
+
+{% block title %}Create Task - Team Collaboration Platform{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div style="max-width: 600px;">
+        <h1>Create Task</h1>
+        
+        <div class="card">
+            <div class="card-body">
+                <!-- Task creation form -->
+                <form method="POST">
+                    <div class="form-group">
+                        <label for="title">Task Title *</label>
+                        <input type="text" id="title" name="title" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <textarea id="description" name="description"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <!-- Assignee list built from team members -->
+                        <label for="assigned_to">Assign To</label>
+                        <select id="assigned_to" name="assigned_to">
+                            <option value="">Unassigned</option>
+                            {% for member in members %}
+                            <option value="{{ member.user.id }}">{{ member.user.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <!-- Priority controls sorting and visual emphasis -->
+                        <label for="priority">Priority</label>
+                        <select id="priority" name="priority">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <!-- Optional due date/time -->
+                        <label for="due_date">Due Date</label>
+                        <input type="datetime-local" id="due_date" name="due_date">
+                    </div>
+                    
+                    <!-- Submit task -->
+                    <button type="submit" class="btn btn-primary">Create Task</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

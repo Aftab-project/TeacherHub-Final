@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+<!--
+    calls/summary.html
+    Purpose: Post-call recap page with details, optional AI summary, and transcript segments.
+-->
+
+{% block title %}Call Summary - Team Collaboration Platform{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 800px;">
+    <!-- Call completion confirmation -->
+    <div class="card" style="margin-bottom: 1.5rem; border-top: 4px solid var(--primary);">
+        <div class="card-body" style="text-align: center; padding: 1.5rem;">
+            <div style="font-size: 3rem; margin-bottom: 0.5rem;">✓</div>
+            <h1 style="margin: 0.5rem 0;">Call Completed</h1>
+            <p style="color: var(--text-secondary); margin: 0;">
+                Call with <strong>{{ other_user.username }}</strong>
+            </p>
+        </div>
+    </div>
+
+    <!-- Basic call metadata -->
+    <div class="card" style="margin-bottom: 1.5rem;">
+        <div class="card-header" style="font-weight: 700;">📞 Call Details</div>
+        <div class="card-body">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div>
+                    <p style="margin: 0; font-size: 0.85rem; color: var(--text-secondary);">Duration</p>
+                    <p style="margin: 0.3rem 0 0 0; font-size: 1.2rem; font-weight: 700;">{{ duration_str or '—' }}</p>
+                </div>
+                <div>
+                    <p style="margin: 0; font-size: 0.85rem; color: var(--text-secondary);">With</p>
+                    <p style="margin: 0.3rem 0 0 0; font-size: 1.2rem; font-weight: 700;">@{{ other_user.username }}</p>
+                </div>
+                <div>
+                    <p style="margin: 0; font-size: 0.85rem; color: var(--text-secondary);">Date</p>
+                    <p style="margin: 0.3rem 0 0 0; font-size: 1rem;">{{ call.created_at.strftime('%b %d, %Y') }}</p>
+                </div>
+                <div>
+                    <p style="margin: 0; font-size: 0.85rem; color: var(--text-secondary);">Status</p>
+                    <div style="margin-top: 0.3rem;">
+                        <span class="badge badge-success">{{ call.status | capitalize }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI-generated summary (shown when available) -->
+    {% if call.summary %}
+    <div class="card" style="margin-bottom: 1.5rem; border-left: 4px solid var(--primary);">
+        <div class="card-header" style="font-weight: 700;">✨ Call Summary</div>
+        <div class="card-body">
+            <p style="margin: 0; line-height: 1.7; white-space: pre-wrap; font-size: 0.95rem;">{{ call.summary }}</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Full transcript section -->
+    {% if segments %}
+    <div class="card" style="margin-bottom: 1.5rem;">
+        <div class="card-header" style="font-weight: 700;">📝 Full Transcript ({{ segments | length }} segments)</div>
+        <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+            {% for segment in segments %}
+            <!-- Individual transcript segment row -->
+            <div style="margin-bottom: 1rem; padding: 0.75rem; background: var(--bg-secondary); border-radius: 8px;">
+                <div style="display: flex; align-items: baseline; gap: 0.75rem; margin-bottom: 0.35rem;">
+                    <span style="font-weight: 700; color: var(--primary);">{{ segment.speaker.username }}</span>
+                    <span style="font-size: 0.75rem; color: var(--text-tertiary);">{{ segment.created_at.strftime('%H:%M:%S') }}</span>
+                </div>
+                <p style="margin: 0; font-size: 0.9rem; line-height: 1.5;">{{ segment.text }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <!-- Empty transcript fallback -->
+    <div class="card" style="margin-bottom: 1.5rem; background: var(--bg-secondary);">
+        <div class="card-body" style="text-align: center; color: var(--text-secondary); padding: 1.5rem;">
+            <p style="margin: 0;">No transcript recorded for this call.</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Follow-up actions -->
+    <div style="display: flex; gap: 0.75rem; justify-content: center; margin-top: 2rem;">
+        <a href="{{ url_for('calls.call_history') }}" class="btn btn-accent">
+            ← View All Calls
+        </a>
+        <a href="{{ url_for('messages.view_dm', user_id=other_user.id) }}" class="btn btn-primary">
+            💬 Message {{ other_user.username }}
+        </a>
+        <button onclick="window.location.href='/messages/direct'" class="btn btn-secondary">
+            + Start New Call
+        </button>
+    </div>
+</div>
+
+<style>
+.badge-success {
+    background-color: #10b981;
+    color: white;
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+</style>
+
+{% endblock %}

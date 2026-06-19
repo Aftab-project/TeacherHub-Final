@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+<!--
+    dashboard/notifications.html
+    Purpose: List user notifications and allow invitation actions.
+    Special case: team_invite notifications render Accept/Decline buttons.
+-->
+
+{% block title %}Notifications - Team Collaboration Platform{% endblock %}
+
+{% block extra_css %}
+<style>
+    .notification-item {
+        scroll-margin-top: 88px;
+    }
+
+    .notification-item:target {
+        box-shadow: inset 0 0 0 2px var(--primary);
+        background: #fffbeb;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Notifications</h1>
+    
+    {% if notifications %}
+    <!-- Notification feed -->
+    <div class="card">
+        {% for notification in notifications %}
+        <!-- Single notification row -->
+        <div id="notification-{{ notification.id }}" class="notification-item" style="padding: 1rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem;">
+            <div style="flex: 1;">
+                <h4>{{ notification.title }}</h4>
+                <p style="color: var(--text-secondary); margin: 0;">{{ notification.message }}</p>
+                <small style="color: var(--text-tertiary);">{{ notification.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+
+                {% if notification_links and notification.id in notification_links %}
+                <div style="margin-top: 0.6rem;">
+                    <a href="{{ notification_links[notification.id] }}" class="btn btn-secondary btn-sm">Open</a>
+                </div>
+                {% endif %}
+
+                <!-- Invitation action buttons show only for pending team_invite -->
+                {% if notification.type == 'team_invite' and notification.related_id in invite_map %}
+                {% set inv = invite_map[notification.related_id] %}
+                <div style="margin-top: 0.6rem; display: flex; gap: 0.5rem;">
+                    <form method="POST" action="{{ url_for('teams.accept_invitation', invitation_id=inv.id) }}" style="margin: 0;">
+                        <button type="submit" class="btn btn-primary btn-sm">Accept</button>
+                    </form>
+                    <form method="POST" action="{{ url_for('teams.decline_invitation', invitation_id=inv.id) }}" style="margin: 0;">
+                        <button type="submit" class="btn btn-secondary btn-sm">Decline</button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+            <!-- Badge color is selected based on notification type -->
+            {% set type_badge = 'badge-info' %}
+            {% if notification.type in ['missed_call', 'call_rejected'] %}
+                {% set type_badge = 'badge-warning' if notification.type == 'missed_call' else 'badge-danger' %}
+            {% elif notification.type in ['task_assigned', 'task_updated'] %}
+                {% set type_badge = 'badge-primary' %}
+            {% elif notification.type == 'team_invite' %}
+                {% set type_badge = 'badge-accent' %}
+            {% elif notification.type in ['team_invite_accepted'] %}
+                {% set type_badge = 'badge-success' %}
+            {% elif notification.type in ['mentioned', 'incoming_call'] %}
+                {% set type_badge = 'badge-info' %}
+            {% endif %}
+            <span class="badge {{ type_badge }}" style="flex-shrink: 0;">{{ notification.type.replace('_', ' ') }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <!-- Empty state -->
+    <div class="card">
+        <div class="card-body" style="text-align: center;">
+            <p>No notifications yet!</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+<!--
+    teams/create.html
+    Purpose: Create a new team workspace.
+    Server creates team, owner membership (admin), and default #general channel.
+-->
+
+{% block title %}Create Team - Team Collaboration Platform{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Form container with readable width -->
+    <div style="max-width: 600px;">
+        <h1>Create a New Team</h1>
+        
+        <div class="card">
+            <div class="card-body">
+                <!-- Team creation form (POST /teams/create) -->
+                <form method="POST">
+                    <div class="form-group">
+                        <label for="name">Team Name *</label>
+                        <input type="text" id="name" name="name" required maxlength="100" placeholder="e.g., Engineering, Marketing, Project-X">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="description">Description (Optional)</label>
+                        <textarea id="description" name="description" placeholder="What is this team about?"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <!-- Visibility flag toggles discoverability -->
+                        <label>
+                            <input type="checkbox" name="is_public">
+                            Make this team public (other users can discover it)
+                        </label>
+                    </div>
+                    
+                    <!-- Primary/secondary actions -->
+                    <div style="display: flex; gap: 1rem;">
+                        <button type="submit" class="btn btn-primary">Create Team</button>
+                        <a href="{{ url_for('teams.list_teams') }}" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Friendly guidance block for first-time users -->
+        <div style="margin-top: 2rem; padding: 1rem; background-color: #e3f2fd; border-radius: 0.5rem;">
+            <h4>💡 Tips for creating teams:</h4>
+            <ul style="margin: 0; padding-left: 1.5rem;">
+                <li>Use clear, descriptive names for teams</li>
+                <li>Add descriptions to help members understand the team's purpose</li>
+                <li>You'll be automatically set as the team admin</li>
+                <li>You can invite members after creating the team</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

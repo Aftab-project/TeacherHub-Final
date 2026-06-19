@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+<!--
+    tasks/view.html
+    Purpose: Read-only detail page for a single task.
+-->
+
+{% block title %}{{ task.title }} - Team Collaboration Platform{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div style="max-width: 600px;">
+        <!-- Navigation back to team task list -->
+        <a href="{{ url_for('tasks.list_team_tasks', team_id=team.id) }}">← Back to Tasks</a>
+        <h1>{{ task.title }}</h1>
+        
+        <!-- Task metadata card -->
+        <div class="card">
+            <div class="card-body">
+                <p><strong>Status:</strong> {{ task.status }}</p>
+                <p><strong>Priority:</strong> {{ task.priority }}</p>
+                <p><strong>Assigned To:</strong> {{ task.assigned_to.username if task.assigned_to else 'Unassigned' }}</p>
+                {% if task.due_date %}
+                <p><strong>Due Date:</strong> {{ task.due_date.strftime('%Y-%m-%d') }}</p>
+                {% endif %}
+                <!-- Description is optional -->
+                {% if task.description %}
+                <p><strong>Description:</strong></p>
+                <p>{{ task.description }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

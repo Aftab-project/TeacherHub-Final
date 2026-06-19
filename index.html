@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Teacher Feature Hub</title>
+    <!-- Shared CSS used by every page in the hub -->
+    <link rel="stylesheet" href="style.css" />
+    <script>
+      // If opened from the static server, force login via Flask app first.
+      if (window.location.port === "5500") {
+        window.location.replace("http://127.0.0.1:5000/auth/login?next=%2F");
+      }
+    </script>
+  </head>
+  <body>
+    <!--
+      TOP HEADER BAR (.top-shell)
+      The dark navy banner at the very top of every page.
+      It shows the site name on the left and the logout action on the right.
+    -->
+    <header class="top-shell">
+      <div class="top-inner">
+        <div class="title-group">
+          <h1>Teacher Feature Hub</h1>
+          <p>One dashboard for practical teacher tools.</p>
+        </div>
+        <div class="top-actions">
+          <form method="POST" action="http://127.0.0.1:5000/auth/logout" style="margin: 0;">
+            <button class="ghost-btn" type="submit">Log out</button>
+          </form>
+        </div>
+      </div>
+    </header>
+
+    <main class="app-main">
+      <section class="feature-grid" id="featureGrid" aria-label="Feature list"></section>
+      <p class="status-text" id="featureSearchStatus" aria-live="polite"></p>
+    </main>
+
+    <!-- Page footer with auto-updated year (set by script.js) -->
+    <footer class="site-footer">
+      <p>Teacher Feature Hub <span id="currentYear"></span></p>
+    </footer>
+
+    <script src="script.js"></script>
+  </body>
+</html>

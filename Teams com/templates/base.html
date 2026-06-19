@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<!-- 
+  base.html - Master template for ALL pages in the app
+  
+  This is the "wrapper" for every page. Other templates inherit from this one.
+  
+  How template inheritance works:
+  - This file defines: navbar, layout, main structure
+    - Other pages extend this base template
+    - Then they fill in the content block with page-specific HTML
+  
+  Example:
+  dashboard.html extends base.html
+  teams/view.html extends base.html
+  calls/room.html extends base.html
+  
+  So all pages get the same navbar, same styling, same footer, etc.
+  This prevents code duplication!
+-->
+<html lang="en">
+<head>
+    <!-- Character encoding: UTF-8 supports all languages (emoji, international chars) -->
+    <meta charset="UTF-8">
+    <!-- Make page responsive on mobile: scale to device width, no zoom -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Page title: Shows in browser tab and search results -->
+    <title>{% block title %}Team Collaboration Platform{% endblock %}</title>
+    <!-- Load Google Fonts: Plus Jakarta Sans (modern, clean font) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+    <!-- Link to main CSS stylesheet (all styling defined there) -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Block for child templates to add their own CSS -->
+    <!-- Example: child templates can provide extra_css content. -->
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- ===== NAVIGATION BAR ===== -->
+    <!-- Top bar with logo, menu links, and user account options -->
+    <nav class="navbar">
+        <!-- Left side: Logo and app name -->
+        <div class="navbar-brand">
+            <!-- Clicking logo takes you home (dashboard) -->
+            <a href="{{ url_for('dashboard.index') }}">
+                <span class="brand-mark">TH</span>  <!-- Logo initials -->
+                <span>Team Hub</span>              <!-- App name -->
+            </a>
+        </div>
+        
+        <!-- LOGGED IN USER: Show navigation menu -->
+        {% if current_user.is_authenticated %}
+        <ul class="navbar-nav">
+            <!-- Main project home: return to Teacher Feature Hub -->
+            <li>
+                <a href="{{ url_for('hub.hub_home') }}">Teacher Hub Home</a>
+            </li>
+
+            <!-- Dashboard link: Home page with overview -->
+            <!-- request.endpoint checks which page we're on -->
+            <!-- If on dashboard, add "active" class (highlight it) -->
+            <li class="{% if request.endpoint == 'dashboard.index' %}active{% endif %}">
+                <a href="{{ url_for('dashboard.index') }}">Dashboard</a>
+            </li>
+            
+            <!-- Teams link: List of all teams user is in -->
+            <!-- request.endpoint.startswith('teams.') means any teams page -->
+            <li class="{% if request.endpoint and request.endpoint.startswith('teams.') %}active{% endif %}">
+                <a href="{{ url_for('teams.list_teams') }}">Teams</a>
+            </li>
+            
+            <!-- Private Chat: 1-on-1 direct messages -->
+            <li class="{% if request.endpoint and request.endpoint.startswith('messages.') %}active{% endif %}">
+                <a href="{{ url_for('messages.direct_hub') }}">Private Chat</a>
+            </li>
+            
+            <!-- Call History: See past calls, start new calls -->
+            <li class="{% if request.endpoint and request.endpoint.startswith('calls.') %}active{% endif %}">
+                <a href="{{ url_for('calls.call_history') }}">Call History</a>
+            </li>
+            
+            <!-- Notifications: See mentions, task assignments, etc -->
+            <li class="{% if request.endpoint and request.endpoint.startswith('dashboard.notifications') %}active{% endif %}">
+                <a href="{{ url_for('dashboard.notifications') }}">Notifications</a>
+            </li>
+        </ul>
+        
+        <!-- Right side: User profile menu -->
+        <div class="nav-user">
+            <!-- Account trigger with initials and username -->
+            <button type="button" class="nav-user-trigger" aria-haspopup="true" aria-expanded="false">
+                <span class="nav-user-avatar">{{ current_user.username[0]|upper }}</span>
+                <span class="nav-user-name">{{ current_user.username }}</span>
+                <span class="nav-user-caret">▾</span>
+            </button>
+            <!-- Profile dropdown actions -->
+            <div class="nav-user-menu" role="menu">
+                <!-- View profile: See public profile -->
+                <a class="nav-user-menu-item" href="{{ url_for('auth.view_profile', user_id=current_user.id) }}" role="menuitem">
+                    <span>Profile</span>
+                    <small>View your account</small>
+                </a>
+                <!-- Edit profile: Change name, bio, picture, etc -->
+                <a class="nav-user-menu-item" href="{{ url_for('auth.edit_profile') }}" role="menuitem">
+                    <span>Edit Profile</span>
+                    <small>Update details and picture</small>
+                </a>
+                <!-- Logout: End session (POST form for security) -->
+                <form method="POST" action="{{ url_for('auth.logout') }}" class="nav-user-menu-form">
+                    <button type="submit" class="nav-user-menu-item nav-user-menu-btn nav-user-menu-item-danger" role="menuitem">
+                        <span>Logout</span>
+                        <small>Sign out of your account</small>
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- NOT LOGGED IN: Show login/register links -->
+        {% else %}
+        <ul class="navbar-nav">
+            <li><a href="{{ url_for('hub.hub_home') }}">Teacher Hub Home</a></li>
+            <li><a href="{{ url_for('auth.login') }}">Login</a></li>
+            <li><a href="{{ url_for('auth.register') }}">Register</a></li>
+        </ul>
+        {% endif %}
+    </nav>
+    
+    <!-- ===== MAIN CONTENT AREA ===== -->
+    <!-- This is where page-specific content goes -->
+    <div class="main-content">
+        <!-- ===== FLASH MESSAGES ===== -->
+        <!-- Messages from server like: "Team created successfully!" or "Error: email already exists" -->
+        <!-- These auto-hide after a few seconds -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <!-- category = type of message: 'success', 'error', 'info', 'warning' -->
+                    <!-- Different CSS classes for different colored alerts -->
+                    <div class="alert alert-{{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <!-- ===== PAGE CONTENT (from child template) ===== -->
+        <!-- This is replaced by each page's specific content -->
+        <!-- Example: dashboard.html fills this with dashboard widgets -->
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- ===== INCOMING CALL NOTIFICATION TOAST ===== -->
+    <!-- Only show if user is logged in -->
+    {% if current_user.is_authenticated %}
+    <!-- Popup notification that appears when someone calls you -->
+    <!-- style="display: none;" means it's hidden by default, shown by JavaScript -->
+    <div id="incomingCallToast" class="incoming-call-toast" style="display: none;">
+        <div class="incoming-call-toast-header">Incoming Video Call</div>
+        <!-- JavaScript fills this with caller's name -->
+        <div id="incomingCallText" class="incoming-call-toast-text"></div>
+        <!-- Accept/Reject buttons -->
+        <div class="incoming-call-toast-actions">
+            <button id="incomingCallAccept" class="btn btn-sm btn-success" type="button">Accept</button>
+            <button id="incomingCallReject" class="btn btn-sm btn-danger" type="button">Reject</button>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- ===== INCOMING CALL POLLING SCRIPT ===== -->
+    <!-- Runs on EVERY page (except call room) to check for incoming calls -->
+    <!-- Shows a toast notification when someone calls -->
+    {% if current_user.is_authenticated %}
+    <script>
+    (function () {
+        // Get reference to HTML elements we need to update
+        const toast = document.getElementById('incomingCallToast');
+        const text = document.getElementById('incomingCallText');
+        const acceptBtn = document.getElementById('incomingCallAccept');
+        const rejectBtn = document.getElementById('incomingCallReject');
+        
+        // Safety check: if elements don't exist, stop here
+        if (!toast || !text || !acceptBtn || !rejectBtn) {
+            return;
+        }
+
+        // Don't show notification if user is already IN a call
+        // (they'll see the call in the room, not in a toast)
+        if (window.location.pathname.startsWith('/calls/room/')) {
+            return;
+        }
+
+        // Track which calls we've already shown
+        let activeCall = null;        // Current incoming call
+        const seenTokens = new Set(); // Tokens we've already displayed
+
+        // Function: Check server for incoming calls
+        async function pollIncomingCalls() {
+            try {
+                // If already handling a call, don't check again yet
+                if (activeCall) {
+                    return;
+                }
+
+                // Ask server: Do I have any incoming calls?
+                const response = await fetch('/calls/incoming', { cache: 'no-store' });
+                if (!response.ok) {
+                    return;
+                }
+
+                // Parse response: { calls: [...] }
+                const data = await response.json();
+                if (!data.calls || !data.calls.length) {
+                    return; // No calls
+                }
+
+                // Find first unseen call
+                // (only show each call once, even if polling runs multiple times)
+                const nextCall = data.calls.find(call => !seenTokens.has(call.call_token));
+                if (!nextCall) {
+                    return; // Already saw this one
+                }
+
+                // Found a new call! Show notification
+                activeCall = nextCall;
+                seenTokens.add(nextCall.call_token);
+                text.textContent = `${nextCall.caller_name} is calling you.`;
+                toast.style.display = 'block';  // Show the popup
+            } catch (error) {
+                console.error('Incoming call polling failed:', error);
+            }
+        }
+
+        // Event handler: User clicked "Accept" button
+        acceptBtn.addEventListener('click', async function () {
+            if (!activeCall) {
+                return;
+            }
+            try {
+                // Tell server: I'm accepting this call
+                const response = await fetch(`/calls/${activeCall.call_token}/accept`, {
+                    method: 'POST'
+                });
+
+                // If accepted, navigate to the call room
+                if (response.ok) {
+                    window.location.href = `/calls/room/${activeCall.call_token}`;
+                    return;
+                }
+            } catch (error) {
+                console.error('Accept call failed:', error);
+            }
+            // If error, hide toast and reset
+            toast.style.display = 'none';
+            activeCall = null;
+        });
+
+        // Event handler: User clicked "Reject" button
+        rejectBtn.addEventListener('click', async function () {
+            if (!activeCall) {
+                return;
+            }
+            try {
+                // Tell server: I'm rejecting this call
+                await fetch(`/calls/${activeCall.call_token}/reject`, {
+                    method: 'POST'
+                });
+            } catch (error) {
+                console.error('Reject call failed:', error);
+            }
+            // Hide toast and reset
+            toast.style.display = 'none';
+            activeCall = null;
+        });
+
+        // Check for incoming calls immediately (and every 8 seconds after)
+        // Why 8 seconds? Frequent enough to feel responsive, but not overload server
+        pollIncomingCalls();
+        setInterval(pollIncomingCalls, 8000);
+    })();
+    </script>
+    {% endif %}
+
+    <!-- User menu interaction: keep dropdown open briefly after hover-out -->
+    {% if current_user.is_authenticated %}
+    <script>
+    (function () {
+        const navUser = document.querySelector('.nav-user');
+        if (!navUser) {
+            return;
+        }
+
+        const trigger = navUser.querySelector('.nav-user-trigger');
+        const menu = navUser.querySelector('.nav-user-menu');
+        if (!trigger || !menu) {
+            return;
+        }
+
+        const closeDelayMs = 1500;
+        let closeTimer = null;
+
+        function clearCloseTimer() {
+            if (closeTimer) {
+                clearTimeout(closeTimer);
+                closeTimer = null;
+            }
+        }
+
+        function openMenu() {
+            clearCloseTimer();
+            navUser.classList.add('is-open');
+            trigger.setAttribute('aria-expanded', 'true');
+        }
+
+        function closeMenu() {
+            clearCloseTimer();
+            navUser.classList.remove('is-open');
+            trigger.setAttribute('aria-expanded', 'false');
+        }
+
+        function scheduleClose() {
+            clearCloseTimer();
+            closeTimer = setTimeout(closeMenu, closeDelayMs);
+        }
+
+        trigger.addEventListener('click', function (event) {
+            event.preventDefault();
+            if (navUser.classList.contains('is-open')) {
+                closeMenu();
+            } else {
+                openMenu();
+            }
+        });
+
+        navUser.addEventListener('mouseenter', openMenu);
+        navUser.addEventListener('mouseleave', scheduleClose);
+
+        document.addEventListener('click', function (event) {
+            if (!navUser.contains(event.target)) {
+                closeMenu();
+            }
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                closeMenu();
+            }
+        });
+    })();
+    </script>
+    {% endif %}
+
+    <!-- Block for child templates to add their own JavaScript -->
+    <!-- Example: child templates can provide extra_js content. -->
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

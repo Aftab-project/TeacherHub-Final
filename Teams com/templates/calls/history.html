@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+<!--
+    calls/history.html
+    Purpose: Show historical call records with status, duration, and transcript drill-down.
+-->
+
+{% block title %}Call History{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 960px;">
+    <div class="card">
+        <!-- Header row with quick navigation -->
+        <div class="card-header d-flex justify-between align-center">
+            <h2 style="margin: 0;">Call History</h2>
+            <a href="{{ url_for('dashboard.index') }}" class="btn btn-secondary btn-sm">Back to Dashboard</a>
+        </div>
+
+        {% if calls %}
+        <!-- Calls table -->
+        <div class="card-body" style="padding: 0;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Direction</th>
+                        <th>User</th>
+                        <th>When</th>
+                        <th>Duration</th>
+                        <th>Status</th>
+                        <th>Transcript</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for call in calls %}
+                    <!-- Determine "other user" based on call direction -->
+                    {% set other_user = call.callee if call.caller_id == current_user.id else call.caller %}
+                    <tr>
+                        <td>{{ 'Outgoing' if call.caller_id == current_user.id else 'Incoming' }}</td>
+                        <td><a href="/auth/profile/{{ other_user.id }}">{{ other_user.username }}</a></td>
+                        <td>{{ call.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>{{ '%d:%02d' % (call.duration // 60, call.duration % 60) if call.duration > 0 else '-' }}</td>
+                        <td>
+                            <span class="badge {% if call.status == 'completed' %}badge-success{% elif call.status == 'rejected' %}badge-danger{% elif call.status == 'missed' %}badge-warning{% else %}badge-info{% endif %}">
+                                {{ call.status | capitalize }}
+                            </span>
+                        </td>
+                        <td>
+                            <!-- Transcript toggle shown only when transcript rows exist -->
+                            {% if call.transcripts %}
+                            <button class="btn btn-ghost btn-sm" onclick="toggleCallDetail({{ call.id }})">📝 View ({{ call.transcripts|length }})</button>
+                            {% else %}
+                            <span style="color:var(--text-tertiary);font-size:0.8rem;">—</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% if call.transcripts %}
+                    <!-- Expandable detail row with summary + transcript segments -->
+                    <tr id="detail-{{ call.id }}" style="display:none; background: var(--bg-secondary);">
+                        <td colspan="6" style="padding: 1rem 1.25rem;">
+                            {% if call.summary %}
+                            <div style="margin-bottom:0.75rem;padding:0.75rem;background:rgba(217,119,6,0.08);border-left:3px solid var(--primary);border-radius:6px;">
+                                <strong style="font-size:0.8rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--primary-dark);">Summary</strong>
+                                <p style="margin:0.35rem 0 0;font-size:0.85rem;line-height:1.6;">{{ call.summary }}</p>
+                            </div>
+                            {% endif %}
+                            <strong style="font-size:0.8rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-tertiary);">Transcript</strong>
+                            <div style="margin-top:0.5rem;display:flex;flex-direction:column;gap:0.3rem;max-height:240px;overflow-y:auto;">
+                                {% for seg in call.transcripts %}
+                                <div style="font-size:0.82rem;padding:0.3rem 0.5rem;border-radius:6px;background:var(--bg-primary);border:1px solid var(--border);">
+                                    <span style="font-weight:700;color:var(--primary-dark);">{{ seg.speaker.username }}</span>
+                                    <span style="color:var(--text-tertiary);font-size:0.72rem;margin-left:0.35rem;">{{ seg.created_at.strftime('%H:%M:%S') }}</span>
+                                    <div>{{ seg.text }}</div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <!-- Empty state -->
+        <div class="card-body">
+            <div class="alert alert-info" style="margin-bottom: 0;">
+                No call history yet. Start a video call from a user profile.
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// Toggle expandable transcript detail row for a call
+function toggleCallDetail(callId) {
+    const row = document.getElementById('detail-' + callId);
+    row.style.display = row.style.display === 'none' ? '' : 'none';
+}
+</script>
+
+{% endblock %}

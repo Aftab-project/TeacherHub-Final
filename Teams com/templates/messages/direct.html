@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+<!--
+    messages/direct.html
+    Purpose: 1-to-1 private chat thread view.
+    Includes conversation list sidebar and in-thread video call button.
+-->
+
+{% block title %}Direct Message with {{ other_user.username }} - Team Collaboration Platform{% endblock %}
+
+{% block content %}
+<div class="container dm-shell">
+    <div class="card dm-grid">
+        <!-- Left column: recent private conversations -->
+        <div class="dm-sidebar">
+            <div class="dm-sidebar-header">
+                <h2>Private Chat</h2>
+                <a href="{{ url_for('messages.direct_hub') }}" class="btn btn-secondary btn-sm">Find Users</a>
+            </div>
+
+            {% if contacts %}
+                <div class="dm-contact-list">
+                    {% for item in contacts %}
+                    <!-- Contact row with unread badge -->
+                    <a href="{{ url_for('messages.view_dm', user_id=item.user.id) }}" class="dm-contact-item {% if item.user.id == other_user.id %}active{% endif %}">
+                        <div class="dm-contact-main">
+                            <div class="message-avatar">{{ item.user.username[0]|upper }}</div>
+                            <div>
+                                <div class="dm-contact-name">{{ item.user.username }}</div>
+                                <div class="dm-contact-preview">{{ item.last_message.content[:35] }}{% if item.last_message.content|length > 35 %}...{% endif %}</div>
+                            </div>
+                        </div>
+                        {% if item.unread_count > 0 %}
+                        <span class="badge badge-danger">{{ item.unread_count }}</span>
+                        {% endif %}
+                    </a>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Right column: active conversation thread -->
+        <div class="dm-thread">
+            <div class="card channel-header-card">
+                <div class="card-body channel-header" style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                        <a href="{{ url_for('messages.direct_hub') }}" class="channel-back-link">← Back to private chats</a>
+                        <h1>@{{ other_user.username }}</h1>
+                        <p class="channel-subtitle">Direct messages are private between both users.</p>
+                    </div>
+                    <!-- Start a 1-to-1 call with this user -->
+                    <button onclick="initiateVideoCall({{ other_user.id }})" class="btn btn-primary" style="white-space: nowrap;">📞 Video Call</button>
+                </div>
+            </div>
+
+            <div class="card chat-pane">
+                <div class="card-body chat-scroll">
+                    {% if messages %}
+                        {% for message in messages %}
+                        <!-- Chat bubble row with sender-based alignment -->
+                        <div id="dm-{{ message.id }}" class="chat-row {% if message.sender_id == current_user.id %}chat-row-own{% endif %}">
+                            {% if message.sender_id != current_user.id %}
+                            <div class="message-avatar">{{ message.sender.username[0]|upper }}</div>
+                            {% endif %}
+
+                            <div class="chat-bubble-wrap {% if message.sender_id == current_user.id %}chat-bubble-wrap-own{% endif %}">
+                                <div class="chat-meta">
+                                    <span class="message-author">{{ message.sender.username }}</span>
+                                    <span class="message-time">{{ message.created_at.strftime('%I:%M %p') }}</span>
+                                </div>
+                                <div class="chat-bubble {% if message.sender_id == current_user.id %}chat-bubble-own{% endif %}">
+                                    <div class="message-text">{{ message.content }}</div>
+                                </div>
+                            </div>
+
+                            {% if message.sender_id == current_user.id %}
+                            <div class="message-avatar">{{ message.sender.username[0]|upper }}</div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                    <!-- Empty state for new conversation -->
+                    <p class="chat-empty">No messages yet. Send your first private message.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Composer for sending direct messages -->
+            <div class="card chat-composer-card">
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('messages.send_dm', user_id=other_user.id) }}" class="chat-composer-form">
+                        <textarea name="content" placeholder="Type a private message..." required maxlength="5000" class="chat-composer-input"></textarea>
+                        <button type="submit" class="btn btn-primary">Send</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Start call and route to generated call room
+async function initiateVideoCall(calleeId) {
+    try {
+        const response = await fetch(`/calls/${calleeId}/initiate`, {
+            method: 'POST'
+        });
+
+        // Read backend response
+        const data = await response.json();
+
+        // Show backend error, if any
+        if (!response.ok) {
+            alert(data.error || 'Failed to initiate call');
+            return;
+        }
+
+        // Success path: open call room
+        window.location.href = `/calls/room/${data.call_token}`;
+    } catch (error) {
+        console.error('Error initiating call:', error);
+        alert('Failed to initiate call.');
+    }
+}
+</script>
+
+{% endblock %}

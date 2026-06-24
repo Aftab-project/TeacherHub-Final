@@ -1,0 +1,8 @@
+operation,label,before_mean_ms,after_mean_ms,improvement_percent,before_median_ms,after_median_ms
+transcript_insertion,Transcript Insertion,0.070133,0.160547,-128.918566,0.034250,0.051950
+transcript_retrieval,Transcript Retrieval,2.548656,0.074132,97.091330,2.444950,0.059750
+message_creation,Message Creation,0.118651,0.156045,-31.515870,0.030350,0.076250
+message_search,Message Search,5.695748,0.057663,98.987607,5.332700,0.031250
+notification_creation,Notification Creation,0.033792,0.114203,-237.955355,0.026800,0.049900
+call_creation,Call Creation,0.042477,0.073992,-74.190258,0.031200,0.058000
+summary_generation,Summary Generation,18.086055,4.174372,76.919386,17.779750,3.817450

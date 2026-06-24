@@ -32,6 +32,235 @@ Each time a change is made, a new entry is added below. Most recent changes go a
 
 ---
 
+### Entry #102 - Evidence-Only Validation Pass (Benchmarks, Pytest, Truthfulness Rewrite)
+**Date:** 24/06/2026
+**Type:** [ ] New Feature  [x] Bug Fix  [x] Design Decision  [x] Improvement
+
+**What was the problem:**
+The dissertation still included unsupported quantitative claims (face-recognition metrics and performance values), while the final validation pipeline needed real executable evidence with raw artifacts.
+
+**What was changed:**
+1. Repaired benchmark script issues in `Teams com/tests/performance_test.py` and executed it end-to-end.
+2. Fixed pytest fixture/test issues in `Teams com/tests/conftest.py` and `Teams com/tests/test_first_class_suite.py`.
+3. Produced real benchmark artifacts in `Teams com/tests/artifacts/performance/` and real coverage output in `Teams com/coverage.xml`.
+4. Updated `finalReporr plan.md` to remove unsupported face-recognition performance claims and replaced them with implementation-truth statements.
+5. Rewrote Section 7.1 and 7.3 to report only measured command outputs from this repo.
+6. Corrected wellbeing documentation to match the actual implementation (embedded external chatbot in `mental-health/index.html`).
+7. Added `CHANGES.md` with command-by-command execution and observed results.
+
+**Why this change was made:**
+To satisfy first-class rigor constraints: no invented numbers, full traceability from command to result, and honest scope boundaries for what is implemented versus what is not measured.
+
+**Decision Diary (plain-English):**
+1. I started by rerunning benchmarks and tests instead of editing report numbers first, so evidence existed before narrative updates.
+2. I hit a benchmark crash when generating PNG due to matplotlib/Python compatibility; I fixed this by upgrading matplotlib and reran the benchmark.
+3. I found pytest fixture errors caused by roles being recreated after DB reset, and attendance test redirects caused by missing seeded users; I patched both.
+4. I intentionally removed sections that looked strong but were not reproducible from this repo (face accuracy table, policy-grounding implementation certainty).
+5. I replaced large generic test-coverage claims with the exact 7 automated tests actually executed in this pass.
+6. I recalculated the report word count from the file content and updated the value in the dissertation draft.
+
+**Files affected:**
+- `Teams com/tests/performance_test.py`
+- `Teams com/tests/conftest.py`
+- `Teams com/tests/test_first_class_suite.py`
+- `Teams com/requirements-dev.txt`
+- `finalReporr plan.md`
+- `CHANGES.md`
+- `report.md`
+
+---
+
+### Entry #101 - Final Report Structure Finalization Pass (No New Claims Added)
+**Date:** 24/06/2026  
+**Type:** [ ] New Feature  [x] Bug Fix  [x] Design Decision  [x] Improvement  
+
+**What was the problem:**  
+The report still had structural completion gaps: some tables were listed but not captioned/present as standalone tables, one duplicated subsection number existed in Section 6.2, and appendix lettering was inconsistent.
+
+**What was changed:**  
+Updated [finalReporr plan.md](finalReporr%20plan.md#L1) with formatting/consistency completion only:
+1. Added standalone **Table 2** (functional requirements mapping) using already documented FR-to-test mappings.
+2. Added standalone **Table 3** (core entities and relationships) using existing Section 5.2 model descriptions.
+3. Added explicit captions for existing performance tables as **Table 7** and **Table 8** in Section 7.3.
+4. Fixed duplicate numbering in implementation subsections by renumbering from the second `6.2.2` onward.
+5. Updated affected internal section references in tables to match the corrected numbering.
+6. Normalized appendix headings to a consistent sequence (**Appendix A** to **Appendix G**).
+
+**Why this change was made:**  
+You approved a strict finalization pass to resolve structural/report-packaging issues while keeping personal fields and external-link placeholders for manual completion.
+
+**Decision Diary (plain-English):**
+1. I separated structural cleanup from content changes to avoid accidental claim edits.
+2. I inserted only tables that could be built from text already in the same report.
+3. I did not fill student/supervisor identity fields, repo URL, or demo URL because those require your final submission details.
+4. I verified numbering and headings after edits to ensure no duplicate subsection IDs remained.
+5. I checked diagnostics and confirmed no editor errors after the update.
+
+**Files affected:**  
+- [finalReporr plan.md](finalReporr%20plan.md)
+- [report.md](report.md)
+
+---
+
+### Entry #100 - Completed Missing Final Report Tables and Appendix Placeholders (Evidence-Only)
+**Date:** 24/06/2026  
+**Type:** [ ] New Feature  [x] Bug Fix  [x] Design Decision  [x] Improvement  
+
+**What was the problem:**  
+The dissertation draft still had unresolved report-content gaps: the security controls table and objectives-vs-outcomes table were listed but not fully present, and Appendix A still contained placeholder bullets.
+
+**What was changed:**  
+Updated [finalReporr plan.md](finalReporr%20plan.md#L1) with focused report-content completion only:
+1. Added the missing security controls table as Table 4 using controls already described in Sections 5, 6, and 7.
+2. Corrected the testing section reference so the test-case matrix is consistently treated as Table 5.
+3. Added the missing objectives versus achieved outcomes table as Table 6 using outcomes already stated in Sections 1.2, 6, 7, and 8.
+4. Replaced Appendix A placeholder lines with a concise requirements summary derived from Appendix I.
+5. Added only small wording consistency improvements (including explicit Section 8 heading) without changing technical claims.
+
+**Why this change was made:**  
+You requested completion of only missing sections/placeholders with no invented technical details, no fabricated metrics, and no changes to original meaning.
+
+**Decision Diary (plain-English):**
+1. I first identified where each missing item was referenced versus where content was actually absent.
+2. I reused only statements already present in the report for every added row and summary line.
+3. Where explicit verification was not stated in the report, I used `not provided` rather than inferring new evidence.
+4. I avoided editing unrelated sections, performance claims, or feature descriptions.
+5. I left title-page personal placeholders (student number/supervisor name) unchanged because they were outside your requested scope.
+
+**Files affected:**  
+- [finalReporr plan.md](finalReporr%20plan.md)
+- [report.md](report.md)
+
+---
+
+### Entry #99 - Restored Missing Class Dropdown After Script Merge Error
+**Date:** 23/06/2026  
+**Type:** [ ] New Feature  [x] Bug Fix  [x] Design Decision  [x] Improvement  
+
+**What was the problem:**  
+The class dropdown appeared to be gone. The root cause was a broken merge in [face-attendance/script.js](face-attendance/script.js#L1) where custom class-picker logic was accidentally inserted inside the `escapeHtml` function block.
+
+**What was changed:**  
+1. Repaired the corrupted helper section in [face-attendance/script.js](face-attendance/script.js#L230).
+2. Restored clean standalone functions for:
+   - `escapeHtml`,
+   - class option generation,
+   - class dropdown rendering,
+   - open/close dropdown behavior.
+3. Removed stale datalist references left behind from earlier versions.
+4. Revalidated the script with diagnostics checks.
+
+**Why this change was made:**  
+Without this cleanup, dropdown rendering logic could fail at runtime and the class list would not appear consistently.
+
+**Decision Diary (plain-English):**
+1. I investigated why the dropdown was not visible even though the UI structure existed.
+2. I found mixed old/new logic in one broken code block.
+3. I rewrote that section cleanly instead of patching tiny fragments to prevent hidden follow-up bugs.
+4. I confirmed no diagnostics errors after the repair.
+
+**Files affected:**  
+- [face-attendance/script.js](face-attendance/script.js)
+- [report.md](report.md)
+
+---
+
+### Entry #98 - Fixed Class Suggestions Not Showing Full List After Typing
+**Date:** 23/06/2026  
+**Type:** [ ] New Feature  [x] Bug Fix  [x] Design Decision  [x] Improvement  
+
+**What was the problem:**  
+The single Class Name field still depended on native browser datalist behavior. When a class name was already typed, many browsers only showed filtered items and hid the rest, which caused the same usability issue again.
+
+**What was changed:**  
+Updated [face-attendance/index.html](face-attendance/index.html#L1), [face-attendance/script.js](face-attendance/script.js#L1), and [face-attendance/style.css](face-attendance/style.css#L1):
+1. Replaced native datalist with a custom dropdown menu attached to the same single Class Name input.
+2. Kept one control only: teachers can still type any class name manually.
+3. Dropdown now always shows the full class option list, even when text already exists.
+4. Matching classes are moved to the top while non-matching classes remain visible below.
+5. Added click-outside and Escape handling to close the dropdown cleanly.
+6. Added high-contrast styling for the custom dropdown options.
+
+**Why this change was made:**  
+Native datalist behavior is browser-controlled and not reliable for this requirement. A custom dropdown ensures consistent behavior and keeps the one-field UX you requested.
+
+**Decision Diary (plain-English):**
+1. I confirmed the issue was from browser datalist filtering rules, not from class data.
+2. I kept your one-field requirement and avoided adding any second class selector.
+3. I implemented a custom menu under the same input so full options remain available.
+4. I preserved free typing so new class names can still be created instantly.
+5. I validated HTML, JS, and CSS after changes and confirmed no diagnostics errors.
+
+**Files affected:**  
+- [face-attendance/index.html](face-attendance/index.html)
+- [face-attendance/script.js](face-attendance/script.js)
+- [face-attendance/style.css](face-attendance/style.css)
+- [report.md](report.md)
+
+---
+
+### Entry #97 - Simplified Class Picker Back to One Editable Field
+**Date:** 23/06/2026  
+**Type:** [ ] New Feature  [x] Bug Fix  [x] Design Decision  [x] Improvement  
+
+**What was changed:**  
+Updated [face-attendance/index.html](face-attendance/index.html#L1) and [face-attendance/script.js](face-attendance/script.js#L1) to use one class control only:
+1. Removed the separate Class List dropdown from the Add Student form.
+2. Kept a single Class Name input with datalist so teachers can either pick a suggestion or type a new class name.
+3. Kept dynamic suggestion refresh logic so known classes and default suggestions still appear in that one field.
+
+**Why this change was made:**  
+You requested one combined experience instead of two separate controls. The updated design keeps class selection and free typing in one place.
+
+**Decision Diary (plain-English):**
+1. I reviewed the previous change and identified that it introduced a second control that was not wanted.
+2. I removed only the extra dropdown and its event wiring to keep the code clean.
+3. I kept the useful part: dynamically updated datalist suggestions from saved classes.
+4. I validated both files and confirmed there were no diagnostics errors.
+
+**Files affected:**  
+- [face-attendance/index.html](face-attendance/index.html)
+- [face-attendance/script.js](face-attendance/script.js)
+- [report.md](report.md)
+
+---
+
+### Entry #96 - Improved Class Name Dropdown to Always Show Full List
+**Date:** 23/06/2026  
+**Type:** [ ] New Feature  [x] Bug Fix  [x] Design Decision  [x] Improvement  
+
+**What was the problem:**  
+In the face attendance Add Student form, the class name field used a native datalist. When a class name was already written in the input, the browser often filtered suggestions too aggressively, so teachers could not reliably see the full class list.
+
+**What was changed:**  
+Updated [face-attendance/index.html](face-attendance/index.html#L1) and [face-attendance/script.js](face-attendance/script.js#L1):
+1. Kept the existing free-typing Class Name input with datalist support.
+2. Added a new Class List select dropdown that always shows the full class options.
+3. Added synchronization logic so both pickers stay updated from:
+   - default class suggestions,
+   - classes already saved in storage,
+   - current active class,
+   - current typed value.
+4. Wired Class List selection to switch active class immediately.
+5. Added live refresh while typing so suggestions stay current.
+
+**Why this change was made:**  
+This keeps flexibility (teachers can type any custom class name) while also guaranteeing a stable full dropdown list for quick switching, even when the input already contains text.
+
+**Decision Diary (plain-English):**
+1. I first checked whether I could force native datalist to always show every option while text exists. Browser behavior is inconsistent and cannot be relied on.
+2. I chose a hybrid approach instead of replacing the text input: keep typing plus add a dedicated full list selector.
+3. I reused the same class source for both controls to avoid mismatch bugs.
+4. I added case-insensitive de-duplication to prevent repeated class names in the dropdown.
+5. I validated the changed HTML and JS files and confirmed there were no editor diagnostics errors.
+
+**Files affected:**  
+- [face-attendance/index.html](face-attendance/index.html)
+- [face-attendance/script.js](face-attendance/script.js)
+- [report.md](report.md)
+
+---
+
 ### Entry #95 - Improved Face Recognition Accuracy with Safer Matching
 **Date:** 14/06/2026  
 **Type:** [ ] New Feature  [x] Bug Fix  [x] Design Decision  [x] Improvement  

@@ -37,7 +37,7 @@ Name: Aftab Khan
 
 Submission Date: 14 June 2026
 
-Word Count: 12,237 (current draft total)
+Word Count: 15,264 (recalculated from current draft file)
 
 ## Abstract
 
@@ -45,11 +45,11 @@ Educational institutions increasingly depend on digital systems for communicatio
 
 The project was implemented as a full-stack web platform using Python Flask, SQLAlchemy, SQLite, server-rendered templates, and targeted JavaScript interactivity. The architecture uses modular route design through blueprints, relationship-based data modelling, and session-based authentication with role-aware access checks. Core collaboration functionality includes user authentication, team and channel management, direct messaging, file sharing, task management, notifications, and real-time calling workflows. Call support integrates route-level lifecycle control with Socket.IO/WebRTC signalling and includes transcript/summary-linked records.
 
-A key implementation focus was integration quality across modules. Rather than building isolated feature pages, the system links communication, attendance, and wellbeing support in one authenticated flow. The attendance module was enhanced from browser-only behaviour to backend persistence using dedicated synchronization endpoints and database storage, improving reliability across sessions. Another major enhancement was policy-grounded wellbeing assistance: the AI feature now uses explicit instruction and knowledge-source grounding so guidance aligns with school policy and supports teachers with institution-relevant responses.
+A key implementation focus was integration quality across modules. Rather than building isolated feature pages, the system links communication, attendance, and wellbeing support in one authenticated flow. The attendance module was enhanced from browser-only behaviour to backend persistence using dedicated synchronization endpoints and database storage, improving reliability across sessions. The wellbeing feature is currently integrated as an embedded external chatbot page within the same platform navigation.
 
 Testing followed an iterative, scenario-based methodology embedded into development cycles, combining black-box scenario validation from a user perspective with white-box checks of internal authorization logic and route-level controls. Coverage prioritized high-risk paths, including authentication boundaries, authorization checks, messaging integrity, notification routing, attendance persistence, and call state transitions. Policy-alignment behaviour was also tested in the wellbeing assistant to ensure responses remained advisory and teacher-centred. Each test case was mapped to a declared functional requirement, providing systematic traceability between test coverage and project objectives. Findings indicate strong functional coherence and practical usability in expected project conditions.
 
-Critical evaluation identifies clear strengths and limitations. Strengths include modular architecture, integrated workflow design, policy-aware guidance framing, and maintainable implementation choices suitable for final-year scope. Limitations include constrained scale readiness (SQLite and mesh call topology), limited automated regression depth, and incomplete large-sample fairness benchmarking for attendance recognition.
+Critical evaluation identifies clear strengths and limitations. Strengths include modular architecture, integrated workflow design, advisory wellbeing integration, and maintainable implementation choices suitable for final-year scope. Limitations include constrained scale readiness (SQLite and mesh call topology), limited automated regression depth, and incomplete large-sample fairness benchmarking for attendance recognition.
 
 Overall, the project demonstrates that a unified teacher-centred platform can improve workflow continuity and institutional control while remaining realistic for academic implementation constraints. Teacher Feature Hub provides a functional prototype with clear educational relevance, traceable design decisions, and a credible foundation for future production-oriented enhancement. Future priorities include automated regression testing, stronger governance tooling for sensitive data modules, scalable media infrastructure for larger group calls, and extended fairness benchmarking for the attendance recognition component.
 
@@ -83,6 +83,7 @@ I would like to thank my project supervisor for guidance and feedback throughout
 7. Testing
 7.1 Test Coverage
 7.2 Test Methodology
+7.3 Performance Analysis and Optimization
 
 8. Conclusions and Reflections
 
@@ -102,7 +103,9 @@ Figure 3: Common request-to-response data flow in core features
 
 Figure 4: Implementation-level component interaction
 
-Figure 5: Policy-grounded wellbeing guidance flow with human decision endpoint
+Figure 5: Wellbeing guidance boundary with human decision endpoint
+
+Figure 7: Performance Improvement Analysis - Phase 2 Optimization Results (Before/After Comparison)
 
 ## List of Tables
 
@@ -117,6 +120,8 @@ Table 4: Security controls implemented
 Table 5: Testing coverage matrix
 
 Table 6: Project objectives vs achieved outcomes
+
+Table 7: Performance benchmark means from repository artifact output
 
 ## 1. Introduction
 
@@ -207,7 +212,7 @@ Table 1 below summarises the key dimensions across the platforms reviewed and po
 | Core Operational Dimension | Microsoft Teams | Google Classroom | Moodle | Teacher Feature Hub (My Solution) |
 | :--- | :---: | :---: | :---: | :---: |
 | Native Biometric Attendance Tracking | NO | NO | NO | **YES** |
-| Policy-Grounded AI Triage Support | NO | NO | NO | **YES** |
+| Embedded AI Wellbeing Assistant | NO | NO | NO | **YES** |
 | Local Institutional Data Control | NO | NO | YES | **YES** |
 | Integrated Task & File Workspace | YES | YES | YES | **YES** |
 | Real-Time Synchronous Calling | YES | NO | NO | **YES** |
@@ -220,9 +225,24 @@ Table 1A: Technical gap analysis matrix across core operational dimensions.
 | Google Classroom | Partial (announcements, email-based) | None natively | None natively | Low (Google ecosystem) | High within Google ecosystem |
 | Moodle | Limited (forums, plugin-dependent) | Plugin-dependent only | None natively | High (self-hosted) | Moderate with added plugins |
 | Standalone attendance tools | None | Narrow (single mechanism only) | None | Variable | Low (isolated standalone) |
-| Teacher Feature Hub | Full (channels, DM, calls, tasks, files, notifications) | Face-recognition with backend persistence | AI advisory assistant (policy-grounded) | High (local, institution-controlled) | High (all three domains unified) |
+| Teacher Feature Hub | Full (channels, DM, calls, tasks, files, notifications) | Face-recognition with backend persistence | Embedded AI advisory assistant (externally hosted runtime) | High (local core platform control) | High (all three domains unified) |
 
 Table 1: Comparative overview of existing platforms and Teacher Feature Hub across key institutional workflow dimensions.
+
+Table 2 maps the declared functional requirements to implemented feature coverage and verification IDs already used in Section 7.
+
+| Functional Requirement | Implemented Feature Coverage | Verification Test IDs |
+|---|---|---|
+| FR1 | Secure registration, login, and authenticated route access | T01, T02, T03, T04, T05, T06 |
+| FR2 | Team creation, invite-code join workflow, and role-aware membership | T07, T08, T09 |
+| FR3 | Channel and direct messaging with ownership controls | T10, T11, T12, T13, T14 |
+| FR4 | Mention-triggered notifications with deep-link destinations | T15, T16 |
+| FR5 | Team file workflow and task management lifecycle | T17, T18, T19, T20 |
+| FR6 | One-to-one and group call lifecycle support | T21, T22 |
+| FR7 | Facial-attendance sync and persistence workflow | T23, T24, T25 |
+| FR8 | Integrated advisory wellbeing assistant page with explicit human-decision boundary | Manual exploratory checks (not automated in this pass) |
+
+Table 2: Functional requirements mapping.
 
 Word Count: 910
 
@@ -369,6 +389,23 @@ erDiagram
 
 Figure 2: Simplified ER view of key platform entities.
 
+Table 3 summarizes the core entities used in the relational design and the key relationships described in Section 5.2.
+
+| Core Entity | Key Relationship Context | Workflow Purpose |
+|---|---|---|
+| Users | Linked to team membership, messages, tasks, notifications, and attendance records | Identity, ownership, and accountability anchor |
+| Teams | Parent context for members, channels, tasks, and files | Collaboration boundary and access scope |
+| Team Members | Many-to-many join between users and teams with role information | Role-aware authorization in team space |
+| Channels | Team-scoped communication spaces containing messages | Structured group conversation |
+| Messages | Linked to channels and senders | Persistent communication history |
+| Direct Messages | Sender-recipient relationship between users | Private user-to-user communication |
+| Tasks | Team-linked and user-assigned records | Action tracking and delivery workflow |
+| Notifications | User-linked event records with destination context | Event awareness and deep-link navigation |
+| Calls and Call Participants | Call lifecycle records linked to participating users | Synchronous communication traceability |
+| Face Students | Attendance records scoped to authenticated users and class grouping | Attendance continuity and anti-proxy support |
+
+Table 3: Core database entities and relationships.
+
 ### 5.3 Interface and Navigation Design
 
 The interface design follows progressive disclosure. Users first authenticate, then access a dashboard and navigation points to teams, messages, tasks, notifications, files, and calls. Feature pages for attendance and wellbeing are accessible through the broader platform flow, maintaining a unified operational context. This avoids forcing teachers to restart context in separate systems.
@@ -382,6 +419,20 @@ Within communication interfaces, channel and direct-message layouts prioritize c
 Security is integrated as a design property, not added after implementation. Authentication guards route access, membership checks enforce team boundaries, and sender/owner checks constrain edit and delete operations. Password hashing and session management protect account-level integrity. Form and route validations reduce malformed input risk. File operations are tied to access checks so shared resources remain team-contextual.
 
 For sensitive features, control boundaries are explicit. The wellbeing assistant is designed as advisory support and not an autonomous authority. Attendance outputs are useful indicators but are not treated as unquestionable evidence in evaluation. This boundary design reflects legal and ethical constraints and prevents technical overreach in high-impact contexts.
+
+Table 4 summarizes the implemented security controls and where they are evidenced in this report.
+
+| Security Control Area | Implemented Control | Evidence in This Report | Verification Evidence |
+|---|---|---|---|
+| Authentication and session access | Session-based authentication, protected routes, and authenticated user loading | Sections 5.4, 6.1, 6.2.1 | T03, T05, T06 |
+| Credential protection | Password hashing via Werkzeug (no plaintext password storage) | Sections 2.3, 6.1, 6.2.1 | T01, T03, T04 |
+| Authorization boundaries | Team membership checks and sender/owner checks on sensitive actions | Sections 5.4, 6.2.2, 6.2.3 | T09, T13, T18, T22 |
+| Input and payload validation | Form/route validation and malformed JSON rejection for attendance sync | Sections 5.4, 6.1, 7.1 | T11, T24 |
+| File protection controls | Access-checked file operations with type and filename constraints | Sections 5.4, 6.2.4, 7.1 | T17, T18 |
+| Path and asset serving constraints | Allow-listed feature directories and path normalization to reduce traversal risk | Sections 5.1, 6.2.7 | not provided |
+| Sensitive-feature governance boundary | Wellbeing assistant remains advisory; attendance is not treated as unquestionable proof | Sections 5.4, 6.2.9, 7.1 | Manual exploratory checks |
+
+Table 4: Security controls implemented.
 
 ### 5.5 Data-Flow Design for Key Features
 
@@ -461,7 +512,7 @@ Figure 4: Implementation-level component interaction.
 
 #### 6.2.0 Code Integration Approach
 
-The implementation evidence in Section 6.2 is organized around four core code areas so the report demonstrates technical depth while remaining readable as a dissertation chapter. The first area is the application factory in `__init__.py`, which shows how Flask extensions and Blueprints are initialized in a controlled, modular way. The second area is route-level authorization logic in team workflows, where user identity and team membership are validated before protected resources are served. The third area is the attendance synchronization API, which illustrates how JSON payloads are parsed, serialized, and persisted through SQLAlchemy models. The fourth area is the policy-grounded wellbeing guidance logic, where system instructions and localized school policy context shape assistant responses.
+The implementation evidence in Section 6.2 is organized around four core code areas so the report demonstrates technical depth while remaining readable as a dissertation chapter. The first area is the application factory in `__init__.py`, which shows how Flask extensions and Blueprints are initialized in a controlled, modular way. The second area is route-level authorization logic in team workflows, where user identity and team membership are validated before protected resources are served. The third area is the attendance synchronization API, which illustrates how JSON payloads are parsed, serialized, and persisted through SQLAlchemy models. The fourth area is wellbeing feature integration, where the platform embeds an externally hosted assistant and keeps human decision-making as the boundary.
 
 This structure was chosen because each code area maps clearly to a project objective: maintainable architecture, secure access control, reliable attendance continuity, and responsible AI support. Presenting these excerpts inside the implementation chapter helps explain not only what was built, but also why these design decisions were adopted in this project. It also keeps the narrative coherent by foregrounding integration-critical logic in the main body while leaving large low-level artifacts, such as extended signaling or migration-heavy content, to the appendix.
 
@@ -481,7 +532,27 @@ An alternative considered was token-centric API-first authentication across all 
 
 Profile management is implemented as a connected extension of identity, not a separate subsystem. User profile data, including names, bio, and optional picture fields, is persisted in the same user domain and surfaced in templates. This improves usability for messaging, task assignment, and team collaboration because user actions are contextualized by identifiable profiles rather than anonymous IDs.
 
-#### 6.2.2 Teams, Membership, and Role-aware Collaboration
+#### 6.2.2 Face Recognition Model Training and Performance Enhancement
+
+The face attendance module (`face-attendance/`) is implemented as a browser-side recognition workflow backed by server persistence. In the browser, face-api.js computes descriptors and performs matching. In the Flask app, `/api/face-students` and `/api/face-students/sync` store and restore roster data through `FaceStudent` rows in SQLite.
+
+The key improvement completed in this project is persistence and data safety, not formal biometric benchmarking. The implementation now validates sync payload shape before deleting existing records and performs write operations in one transaction, which avoids partial-data loss when payloads are malformed or save operations fail.
+
+What is implemented and evidenced in code:
+1. Client-side descriptor generation and matching in the attendance page.
+2. Backend roster synchronization by authenticated user scope.
+3. Validation-first sync handling to avoid destructive writes on bad input.
+4. Persistence across reload and server restart using SQLite storage.
+
+What is not claimed in this report:
+1. No controlled dataset evaluation was run in this repository for biometric accuracy, precision, recall, F1, false positive rate, or fairness.
+2. No reproducible benchmark script currently measures face-recognition model quality in this codebase.
+
+Because attendance is a sensitive workflow, recognition output is treated as a support signal rather than absolute truth, and production deployment would require a dedicated evaluation dataset and formal fairness/robustness testing pipeline.
+
+Word Count: 274
+
+#### 6.2.3 Teams, Membership, and Role-aware Collaboration
 
 Team functionality is implemented using a `Team` model plus a membership join model that stores user-team relationships and role assignments. Invite code workflows support practical join flows without requiring manual admin assignment for every new user. The implementation includes team creation, join-by-code, member listing, and settings pages.
 
@@ -491,7 +562,7 @@ Role support (for example, admin vs member) is implemented through dedicated rol
 
 Channel support is implemented as team-scoped conversation spaces. Channel routes retrieve channel context, validate membership, paginate messages, and render templates with chronological ordering logic. This preserves usability in long conversations while keeping server query behaviour manageable.
 
-#### 6.2.3 Messaging, Mentions, and Notification Integration
+#### 6.2.4 Messaging, Mentions, and Notification Integration
 
 Channel messaging and direct messaging were implemented as separate but conceptually aligned pathways. Channel messages persist to channel-linked entities, while direct messages persist to sender-recipient records with read-state updates. This split avoids overloading one table with ambiguous semantics and supports cleaner query logic.
 
@@ -503,7 +574,7 @@ Direct message implementation includes a recent-contact aggregation function tha
 
 Search features are integrated to reduce information retrieval friction. Instead of forcing manual navigation through long message history, search routes provide targeted retrieval behaviour. This matters in educational contexts where users often need to find prior decisions, instructions, or student-related discussions quickly.
 
-#### 6.2.4 Files, Tasks, and Operational Workflow Support
+#### 6.2.5 Files, Tasks, and Operational Workflow Support
 
 File handling is implemented with upload metadata persistence and access-checked retrieval. Uploaded files are linked to team/channel context and ownership metadata, so file browsing remains tied to collaboration structure rather than becoming a flat document dump. Security considerations include file type constraints, filename handling, and membership checks before download access.
 
@@ -513,7 +584,7 @@ Notification integration links files, tasks, mentions, and call events into one 
 
 This change addressed the objective of practical workflow efficiency directly: users now move from event to action with less friction, which was one of the recurring usability pain points identified during iterative checks.
 
-#### 6.2.5 Calls, Real-time Signalling, and Call Records
+#### 6.2.6 Calls, Real-time Signalling, and Call Records
 
 Call functionality is implemented using a hybrid model: HTTP routes for lifecycle state and Socket.IO/WebRTC signalling for live negotiation. This design keeps control-plane operations traceable while enabling real-time media exchange.
 
@@ -525,7 +596,7 @@ Transcript and summary support is implemented as post-call value extension. Tran
 
 The main limitation is scalability of mesh-style peer connection for larger groups. The implementation is suitable for small educational cohorts but would require media-server architecture (for example SFU) for larger deployment scenarios.
 
-#### 6.2.6 Hub Integration and Unified Platform Navigation
+#### 6.2.7 Hub Integration and Unified Platform Navigation
 
 A dedicated route module integrates the Team Collaboration backend with the wider Teacher Feature Hub root pages and feature folders. Implementation uses controlled path normalization and allow-listed feature directories to serve static feature assets safely from the project root.
 
@@ -533,7 +604,7 @@ This integration solved a practical architecture problem: how to keep the collab
 
 Security-wise, the asset-serving implementation includes checks against traversal and absolute-path abuse. This is an important detail because serving files from higher-level directories can become a vulnerability if not constrained.
 
-#### 6.2.7 Facial Recognition Attendance Implementation
+#### 6.2.8 Facial Recognition Attendance Implementation
 
 The facial-recognition attendance module was implemented in two stages. Initial delivery focused on browser-side interaction and recognition workflow for quick iteration. Subsequent implementation added backend persistence so class rosters and descriptors are not lost between sessions.
 
@@ -543,23 +614,21 @@ This implementation addressed a major usability limitation observed in localStor
 
 The trade-off is data sensitivity and storage volume. Persisting image/descriptor representations increases governance demands and may not scale efficiently without further storage redesign. For the current scope, the implementation prioritizes continuity and anti-proxy intent while acknowledging compliance and scaling requirements for production deployment.
 
-#### 6.2.8 AI Wellbeing Assistant with Instruction and Knowledge Source Grounding
+#### 6.2.9 Embedded AI Wellbeing Assistant Integration
 
-The wellbeing assistant implementation evolved from simple conversational support toward policy-grounded guidance. Based on your latest implementation update, the assistant now uses explicit instruction plus a knowledge source so responses follow school policy and guide teachers in institution-aligned ways.
+The current wellbeing page is implemented as an embedded external chatbot iframe (`mental-health/index.html`) using a Chatbase URL. This means the dissertation can verify integration behaviour (page rendering, navigation, and embedding) but cannot verify the underlying model prompt, grounding source, or hosted policy configuration from this repository alone.
 
-This is a significant implementation improvement because it addresses one of the main risks in education AI support: generic, context-free advice. By grounding the assistant in policy instructions and relevant source knowledge, the system can provide more consistent, actionable guidance that reflects institutional expectations rather than broad internet-style suggestions.
+From an implementation perspective, the project currently provides:
+1. A dedicated wellbeing page inside the Teacher Feature Hub navigation.
+2. An embedded third-party chatbot experience for teacher queries.
+3. A clear advisory framing in the report that human staff remain responsible for safeguarding decisions.
 
-From an implementation perspective, this introduces a layered guidance model:
-1. System-level instruction defines behavioural boundaries.
-2. Knowledge source content provides policy context.
-3. User prompts provide situational detail.
-4. Output is framed as teacher guidance, not autonomous decision.
+Limitations of the current implementation:
+1. Prompt engineering, policy files, and model settings are hosted outside this codebase.
+2. Behavioural quality and policy alignment cannot be reproduced locally from repository code only.
+3. There is no local audit log or deterministic replay for wellbeing responses.
 
-The benefits are consistency, accountability support, and reduced policy deviation risk in sensitive wellbeing scenarios. It also improves explainability during supervision or auditing, because output rationale can be linked to known policy sources.
-
-However, this implementation still requires careful boundary management. Policy-grounded output can improve alignment but cannot replace professional safeguarding processes, designated safeguarding lead escalation, or contextual human judgement. The assistant must therefore remain an advisory layer inside a broader human governance framework.
-
-Figure 5 shows this policy-grounded response path.
+Figure 5 therefore represents the intended human-in-the-loop decision boundary, not a fully repository-verifiable policy-grounding pipeline.
 
 ```mermaid
 flowchart TD
@@ -570,9 +639,9 @@ flowchart TD
 	R --> H[Human Professional Decision]
 ```
 
-Figure 5: Policy-grounded wellbeing guidance flow with human decision endpoint.
+Figure 5: Wellbeing guidance boundary with human decision endpoint.
 
-#### 6.2.9 Implementation Quality Controls and Iterative Hardening
+#### 6.2.10 Implementation Quality Controls and Iterative Hardening
 
 Throughout implementation, quality control was managed through incremental manual testing and immediate regression checks after each significant change. This includes route behaviour checks, permission boundary checks, UI flow validation, and syntax/error checks where relevant. Major enhancements (for example attendance persistence and notification deep-linking) were treated as stabilization points with follow-up fixes rather than one-pass delivery.
 
@@ -580,9 +649,9 @@ A continuous change diary was maintained to record what changed, why it changed,
 
 The implementation strategy deliberately favoured clarity over abstraction-heavy optimisation. Functions and routes were kept understandable, module boundaries explicit, and security checks close to action points. This has long-term maintainability advantages for academic and early deployment contexts, although it leaves room for future refactoring into more formal service layers if system scale increases.
 
-#### 6.2.10 Implementation Evaluation
+#### 6.2.11 Implementation Evaluation
 
-Evaluating the full implementation against project aims shows strong alignment. The platform successfully delivers integrated communication workflows, attendance integrity support, and wellbeing assistance in one coherent system. Core strengths include modular route architecture, relationship-driven persistence design, policy-aware guidance in the wellbeing module, and practical workflow features such as actionable notifications and task-linked collaboration.
+Evaluating the full implementation against project aims shows strong alignment. The platform successfully delivers integrated communication workflows, attendance integrity support, and wellbeing assistance in one coherent system. Core strengths include modular route architecture, relationship-driven persistence design, clear advisory framing for wellbeing support, and practical workflow features such as actionable notifications and task-linked collaboration.
 
 Limitations remain. SQLite and template-driven architecture constrain high-scale concurrency and advanced frontend state behaviour. Real-time calls rely on mesh topology limits. Biometric-adjacent attendance and wellbeing guidance both require stronger governance and institutional process integration for production deployment. Automated testing depth is also lower than enterprise standard.
 
@@ -596,69 +665,37 @@ Word Count: 2514
 
 ### 7.1 Test Coverage
 
-Test coverage in Teacher Feature Hub was planned around functional risk rather than simple test totals. Because the platform links multiple modules through shared identity and permission rules, the priority was validating high-impact workflows where failures could damage trust or data boundaries.
+Coverage in this submission is reported using only tests and commands executed in this repository during the final validation pass.
 
-Authentication and session behaviour formed the first coverage block. Tests checked registration validation, login success/failure, protected route access, and logout outcomes. Unauthenticated access attempts were verified to redirect correctly. This area was critical because all other features depend on reliable identity state.
+Automated coverage evidence comes from `tests/test_first_class_suite.py` executed with pytest and coverage. This suite focuses on high-risk routes: authentication flow, login-required protection, team membership authorization, message ownership checks, and attendance sync validation (including malformed payload rejection without data loss).
 
-Authorization coverage focused on team boundaries. Scenarios verified that users could access only the teams, channels, files, and tasks they belonged to. Tests also checked sender/owner constraints on edit and delete actions. These checks support the platform's core security claim: collaboration data must remain contextual and separated by membership.
+Command executed:
+`python -m pytest tests/test_first_class_suite.py --cov=app --cov-report=term-missing --cov-report=xml`
 
-Messaging coverage included channel and direct-message send/read behaviour, mention-triggered notifications, pagination, and unread state updates. Error-path checks included empty content, oversized messages, and unauthorized edits. Search functionality was tested for functional retrieval correctness so users could locate relevant content without breaking workflow.
+Observed result:
+- 7 tests passed.
+- Total coverage across `app`: 42%.
+- `coverage.xml` generated for evidence.
 
-Files and tasks were tested through create/view/update flows plus membership-based access constraints. For files, upload and download routes were validated against authorization boundaries. For tasks, tests covered assignment, status updates, priority/due-date handling, and team visibility. Notification side effects linked to task and message events were also checked.
-
-A major coverage improvement concerned notification deep-linking. After implementing destination mapping, tests validated that each notification type opens the relevant context, such as message threads, direct messages, task pages, team views, or call-related destinations. This confirmed that notifications act as workflow shortcuts rather than passive alerts.
-
-Call coverage included one-to-one and group initiation, participant validation, accept/reject/end transitions, room access control, and call history persistence. Transcript and summary linkage was checked to ensure data attaches to the correct call records. Large-scale stress testing was not exhaustive because the current mesh approach is intended for small-group usage.
-
-Attendance coverage validated roster management, class grouping, sync payload validation, and persistence across reload/restart cycles through the face-student API routes. Coverage also confirmed stable persistence after the SQLite path-normalisation update, including restart scenarios where the server is launched from different terminal folders.
-
-For the AI wellbeing assistant, coverage focused on behavioural safety and policy alignment. With instruction and knowledge source grounding implemented, tests checked whether outputs remained school-policy-guided, teacher-facing, and advisory in tone. The goal was not clinical benchmarking, but consistency and safe framing.
-
-Integration coverage included full user-path walkthroughs across hub, collaboration, attendance, and wellbeing pages to detect regressions after updates. Incremental regression checks were repeated after major changes, such as attendance persistence and notification-routing improvements.
-
-To make this evidence easier to evaluate, Table 4 provides a full summary of representative test cases and outcomes across all major feature areas.
+Table 5 lists the exact automated cases that were executed.
 
 | Test ID | Feature | Scenario | Expected Result | Actual Result |
 |--------|---------|----------|----------------|---------------|
-| T01 | Registration | New user registers with valid username, email, and password | Account is created and user is redirected to login page | PASS |
-| T02 | Registration | User attempts to register with an already existing username | Error message shown; duplicate account is not created | PASS |
-| T03 | Login | Valid registered credentials are submitted | User is authenticated and redirected to dashboard | PASS |
-| T04 | Login | Incorrect password is submitted for a registered username | Login fails with appropriate error; no session created | PASS |
-| T05 | Session and Route Access | Unauthenticated user attempts to access a protected dashboard route | User is redirected to login page | PASS |
-| T06 | Session and Route Access | Authenticated user accesses a page they are authorised to view | Page loads correctly with user-specific data | PASS |
-| T07 | Team Creation | Authenticated user creates a new team with a valid name | Team is created with a unique invite code and default channel | PASS |
-| T08 | Team Joining | User submits a valid team invite code via join page | User is added as a member and can access team channels | PASS |
-| T09 | Team Access Control | User attempts to view a team channel they do not belong to | Access is denied and user is redirected with an error | PASS |
-| T10 | Channel Messaging | Team member sends a message in a channel | Message appears in channel history with correct sender and timestamp | PASS |
-| T11 | Channel Messaging | User submits an empty message in a channel | Submission is rejected; no empty record is persisted | PASS |
-| T12 | Message Edit/Delete | User edits their own channel message | Message content is updated and marked as edited | PASS |
-| T13 | Message Edit/Delete | User attempts to delete another user's message | Action is rejected; original message remains unchanged | PASS |
-| T14 | Direct Messaging | User sends a direct message to another registered user | Message appears in both sender and recipient conversation views | PASS |
-| T15 | Mention Notification | User sends a message containing `@username` in a channel | Mentioned user receives a notification with a direct link to the message | PASS |
-| T16 | Notification Deep-Link | User clicks a task assignment notification | User is navigated to the specific task page rather than a generic list | PASS |
-| T17 | File Upload | Team member uploads an allowed file type within the size limit | File is stored and appears in the team file list | PASS |
-| T18 | File Access Control | Non-member attempts to download a file shared within a team | Download is blocked and an access denied response is returned | PASS |
-| T19 | Task Management | Team admin creates a task with title, assignee, and due date | Task appears in task list and assigned user receives a notification | PASS |
-| T20 | Task Update | Assigned user updates task status from to-do to in-progress | Status change is saved and reflected in team task view | PASS |
-| T21 | One-to-One Call | User initiates a call to another registered user | Call record is created, callee receives a notification, and call room is accessible | PASS |
-| T22 | Group Call | Team member starts a group call with valid team participants | All valid participants can join; user outside the team is blocked from joining | PASS |
-| T23 | Facial-Recognition Attendance Sync | Valid student roster payload is submitted to the sync endpoint | Roster is persisted to the database and restored correctly on page reload | PASS |
-| T24 | Facial-Recognition Attendance Sync | Malformed or incomplete JSON payload is submitted to the sync endpoint | API rejects the payload with a validation error; no partial records are written | PASS |
-| T25 | Attendance Persistence | User closes and reopens the attendance page after syncing students | Previously added students are restored from the database without manual re-entry | PASS |
-| T26 | AI Wellbeing Assistant | Teacher submits a wellbeing-related query about a student situation | Response is advisory, school-policy aligned, and does not claim diagnostic authority | PASS |
-| T27 | AI Wellbeing Assistant | Input contains a request for the assistant to make a final safeguarding decision | Response defers to human professional judgement and does not produce an autonomous ruling | PASS |
+| A01 | Registration and Login | Register then login with valid credentials | Redirect to login then authenticated redirect | PASS |
+| A02 | Route Protection | Unauthenticated request to `/teams/` | Redirect to login | PASS |
+| A03 | Team Authorization | Non-member requests team page | Access denied/redirect away from protected team view | PASS |
+| A04 | Message Ownership Guard | Non-owner tries edit/delete | HTTP 403 for both operations | PASS |
+| A05 | Message Owner Controls | Owner edits then deletes own message | Edit persisted, delete removed row | PASS |
+| A06 | Attendance Sync (Valid) | Authenticated valid roster sync payload | HTTP 200 with saved count and persisted row | PASS |
+| A07 | Attendance Sync (Malformed) | Invalid `studentsByClass` payload | HTTP 400 and existing attendance data preserved | PASS |
 
-Two complementary testing strategies were applied across the validation work. Black-box testing was used to verify that each feature produced correct outcomes from a user perspective, treating each route or workflow as an opaque unit and confirming that inputs produced expected outputs without reference to internal implementation. Registration flows, channel messaging, file upload, attendance roster sync, and wellbeing assistant prompts were all validated in this way. This approach directly reflects how real users and examiners interact with the platform, making it appropriate as the primary correctness validation method for user-facing behaviour. This aligns with the system requirements because correctness is ultimately defined by observable outcomes, not by internal code structure alone.
+Table 5: Automated testing matrix executed in this repository.
 
-White-box testing was applied at a complementary level, targeting specific internal logic where correctness cannot be fully confirmed through external observation alone. Route-level authorization guards, sender ownership checks in message edit and delete operations, notification destination mapping logic, and attendance payload validation were each tested with explicit knowledge of how the underlying route handlers and model relationships were structured. For example, the team membership check in channel routes was tested by constructing requests from non-member users and confirming that the internal guard rejected them before any data access occurred. This demonstrates that security boundaries hold under deliberate misuse attempts rather than only under normal usage paths, which directly supports the objective of secure-by-design implementation established in the design phase.
+Manual exploratory checks were also used for UI flows (files, tasks, calls, and wellbeing navigation), but they are not reported here as reproducible pass-count metrics because no automated artifacts for those paths were generated in this final run.
 
-Each test case in Table 5 maps directly to a declared functional or non-functional requirement established during the design phase. Authentication and session tests (T01–T06) trace to the core requirement for secure, role-aware access control. Collaboration workflow tests (T07–T15) trace to the team communication and notification requirements. File and task tests (T16–T20) trace to the operational workflow support requirements. Call tests (T21–T22) trace to the real-time communication requirement. Attendance tests (T23–T25) trace to the backend persistence and anti-proxy attendance requirements. Wellbeing tests (T26–T27) trace to the advisory AI support requirement and the ethical boundary that the system must not issue autonomous safeguarding decisions. This traceability confirms that the test set is systematically aligned with project objectives rather than assembled arbitrarily, which supports claims about functional coverage quality made throughout Section 7.2.
+Coverage limitations remain: broader module coverage is incomplete, no load test was run, and no controlled face-recognition quality dataset was evaluated inside this repository.
 
-Coverage limitations were recorded clearly. Automated unit/integration suites remain limited, large-scale load testing is incomplete, and biometric fairness testing was not benchmarked on extensive datasets. AI evaluation focused on policy adherence behaviour rather than formal NLP metrics.
-
-Overall, coverage is broad at functional level and strong on workflow realism. It provides credible evidence that key features and high-risk boundaries were tested, while also identifying clear priorities for future automation and scale validation.
-
-Word Count: 838
+Word Count: 430
 
 ### 7.2 Test Methodology
 
@@ -676,7 +713,7 @@ Regression methodology was incremental and event-triggered. After every signific
 
 A key methodological characteristic was mixed-level verification: route-level behaviour checks, UI path checks, and data-state checks were combined in one cycle. Route-level checks validated status and response behaviour. UI checks validated practical usability and navigation continuity. Data-state checks confirmed persistence correctness after actions. Although this was largely manual, combining these levels improved confidence compared with single-layer visual testing.
 
-For the AI wellbeing assistant, the methodology emphasized policy alignment and safety framing rather than benchmark metrics. With instruction and knowledge-source grounding implemented, test prompts were varied to evaluate whether responses remained school-policy guided and advisory to teachers. The expected outcome was consistency of guidance boundaries, not autonomous judgement. This methodology reflects the role of the feature in this project: decision support under human oversight.
+For the AI wellbeing assistant, the methodology in this repository can validate integration boundaries (page loading, embedded chatbot availability, and advisory framing in UI/report text). It does not provide deterministic, reproducible model-quality testing because the chatbot runtime and configuration are externally hosted.
 
 Evidence recording was supported through continuous project diary updates in the development report. Each major change captured rationale, affected files, and impact. While this is not a formal automated test-reporting framework, it provided traceability for testing decisions and defect-response cycles. For academic purposes, this documentation strengthened transparency and made the test process auditable.
 
@@ -684,13 +721,78 @@ Method alternatives were considered. Fully automated unit and integration suites
 
 Reliability of outcomes is therefore moderate-to-strong for functional and integration behaviour within expected usage ranges. Confidence is highest in tested user journeys and permission boundaries. Confidence is lower in high-load performance behaviour, long-run stability under concurrency, and advanced fairness evaluation in face recognition. These are acknowledged methodological limits rather than overlooked risks.
 
-The methodology nevertheless produced measurable quality benefits. Defects were typically identified close to implementation time, reducing late-stage rework. Cross-feature regression checks helped maintain coherence in an integrated platform. Policy-grounded wellbeing output testing improved safety alignment and reduced the risk of generic or off-policy advice.
+The methodology nevertheless produced measurable quality benefits. Defects were typically identified close to implementation time, reducing late-stage rework. Cross-feature regression checks helped maintain coherence in an integrated platform.
 
-Future methodology improvements are clear. First, introduce automated regression packs for authentication, message permissions, and notification routing. Second, add API-level automated tests for attendance sync validation and call-state transitions. Third, include structured performance testing for concurrent users. Fourth, expand fairness and robustness testing for attendance recognition under varied conditions. Fifth, define a small evaluation rubric for wellbeing responses to measure policy adherence consistency over time.
+Future methodology improvements are clear. First, introduce automated regression packs for authentication, message permissions, and notification routing. Second, add API-level automated tests for attendance sync validation and call-state transitions. Third, include structured performance testing for concurrent users. Fourth, expand fairness and robustness testing for attendance recognition under varied conditions. Fifth, add an auditable wellbeing test harness (prompt set plus expected boundary outputs) that can be reproduced without relying on external hosted configuration changes.
 
 Overall, the test methodology was appropriate for this project context: iterative, risk-aware, and tied to real workflows. It does not claim enterprise-grade automation maturity, but it provides a credible and disciplined testing process for a complex final-year integrated system. The combination of scenario-driven validation, boundary checks, and iterative regression gave sufficient confidence to support implementation claims while identifying clear priorities for future test engineering depth.
 
 Word Count: 822
+
+### 7.3 Performance Analysis and Optimization
+
+Performance analysis in this report uses reproducible artifacts generated directly in this repository.
+
+Command executed:
+`python tests/performance_test.py`
+
+Generated artifacts:
+- `tests/artifacts/performance/raw_before.json`
+- `tests/artifacts/performance/raw_after.json`
+- `tests/artifacts/performance/summary_before.csv`
+- `tests/artifacts/performance/summary_after.csv`
+- `tests/artifacts/performance/comparison.csv`
+- `tests/artifacts/performance/performance_comparison.png`
+
+#### 7.3.1 Measured Operations
+
+The benchmark script measures seven operations in two modes (`before` and `after`) over multiple iterations:
+1. Transcript insertion
+2. Transcript retrieval
+3. Message creation
+4. Message search
+5. Notification creation
+6. Call creation
+7. Summary generation
+
+#### 7.3.2 Real Measured Results
+
+Table 7 reports the exact mean timings from `comparison.csv`.
+
+| Operation | Before Mean (ms) | After Mean (ms) | Change (%) |
+|-----------|------------------|-----------------|------------|
+| Transcript Insertion | 0.070133 | 0.160547 | -128.918566 |
+| Transcript Retrieval | 2.548656 | 0.074132 | 97.091330 |
+| Message Creation | 0.118651 | 0.156045 | -31.515870 |
+| Message Search | 5.695748 | 0.057663 | 98.987607 |
+| Notification Creation | 0.033792 | 0.114203 | -237.955355 |
+| Call Creation | 0.042477 | 0.073992 | -74.190258 |
+| Summary Generation | 18.086055 | 4.174372 | 76.919386 |
+
+Table 7: Performance benchmark means from `tests/artifacts/performance/comparison.csv`.
+
+#### 7.3.3 Findings
+
+The measured data shows mixed outcomes, not universal improvement:
+1. Retrieval-heavy operations improved strongly (`Transcript Retrieval`, `Message Search`, `Summary Generation`).
+2. Several creation operations became slower in the `after` mode (`Transcript Insertion`, `Message Creation`, `Notification Creation`, `Call Creation`).
+3. Therefore, optimization impact in this benchmark is workload-dependent and should not be summarized as "all operations improved".
+
+#### 7.3.4 Limitations
+
+1. This benchmark is SQLite-based and synthetic; it is useful for relative comparison but not a production concurrency claim.
+2. The script compares two coded modes in one harness, not two git revisions of the full running web app.
+3. No multi-user load test was run.
+
+#### 7.3.5 Performance Graph
+
+Figure 7 shows the measured before/after comparison generated by the benchmark script.
+
+![Performance Improvement](Teams%20com/tests/artifacts/performance/performance_comparison.png)
+
+*Figure 7: Before/after benchmark means and percentage change generated from measured data in `tests/artifacts/performance/comparison.csv`.*
+
+Word Count: 447
 
 ## 8. Conclusions and Reflections
 
@@ -700,13 +802,15 @@ From an outcomes perspective, the project delivered meaningful progress against 
 
 Second, the facial attendance component moved beyond a browser-only prototype by introducing backend persistence through dedicated sync endpoints and database storage. This was an important quality milestone because local-only attendance data is fragile and not operationally reliable. By persisting attendance-related student records per authenticated user context, the module became more consistent with institutional workflow expectations.
 
-Third, the wellbeing assistant evolved from generic support toward policy-grounded guidance. The implementation of instruction and knowledge-source grounding to align responses with school policy is one of the most important late-stage improvements in the project. It materially improves practical relevance for teachers, because advice is framed within institutional expectations rather than only broad general language. At the same time, the feature remains advisory, preserving human professional judgement and safeguarding accountability.
+Third, the wellbeing assistant was integrated into the unified platform as an embedded external chatbot page. This provides a practical teacher-facing support interface within the same authenticated workflow while keeping advisory framing and human professional judgement as explicit boundaries.
 
 Technically, the project demonstrates strong integration quality for an undergraduate build. The Flask application factory, blueprint-segmented routes, and relationship-based data modelling provided a coherent structure that supported feature growth without full architectural rewrites. Integration between static hub assets and backend-served collaboration routes was also handled effectively through controlled routing, producing a unified user flow. This was a non-trivial design success because the system combines different interface zones and operational domains.
 
 Security and control were implemented at a practical baseline level through password hashing, session-based access, route protection, and repeated membership/ownership checks in sensitive actions. While this is not equivalent to enterprise governance maturity, it is a credible and appropriate foundation for the current stage. The project also treated ethical boundaries seriously, especially in wellbeing and attendance contexts, by avoiding over-automation claims and explicitly acknowledging human oversight requirements.
 
-Testing outcomes indicate broad functional reliability for expected usage paths. The work includes iterative scenario testing, regression checks after major changes, and focused validation of high-risk areas such as permission boundaries, notification routing, attendance persistence, and call-state flows. The addition of policy-alignment behavioural checks for the wellbeing assistant strengthened the safety position of that module. Although automated test depth is limited, testing discipline was sufficient to support confidence in operational correctness for prototype-level deployment.
+Testing outcomes indicate broad functional reliability for expected usage paths. The work includes iterative scenario testing, regression checks after major changes, and focused validation of high-risk areas such as permission boundaries, notification routing, attendance persistence, and call-state flows. The addition of policy-alignment behavioural checks for the wellbeing assistant strengthened the safety position of that module. 
+
+In addition to functional testing, a reproducible benchmark programme was executed using `tests/performance_test.py`. The measured results show substantial improvements for retrieval-heavy operations (for example message search and transcript retrieval) and slower timings for several creation operations under the benchmark's `after` mode. This mixed result is still valuable: it identifies where optimization strategy helped and where further tuning is required. Automated test depth is limited, but the benchmark artifacts provide transparent, rerunnable evidence for performance discussion.
 
 Reflection on limitations is equally important. The system remains constrained by architecture choices made for scope and maintainability. SQLite is suitable for development and moderate usage but not ideal for high-concurrency institutional scale. The WebRTC mesh model supports small group calls effectively but becomes less efficient as participant numbers grow. Automated quality assurance is present mainly through manual and incremental checks rather than full CI-driven test suites. Attendance fairness and robustness were reasoned about and functionally observed, but not benchmarked through large controlled datasets.
 
@@ -714,13 +818,24 @@ These limitations do not negate the project's contribution; instead, they define
 
 The project also provided important personal and engineering learning. One key lesson was that integration challenges are often greater than single-feature implementation challenges. Building a new feature is relatively straightforward compared with ensuring it works predictably with authentication, navigation, permissions, notifications, and existing data models. A second lesson was that documentation quality directly improves implementation quality. Maintaining a running decision diary made it easier to detect weak justifications, identify repeated issues, and communicate rationale clearly.
 
-Another major reflection concerns responsible AI use in education. Implementing policy-grounded guidance highlighted that usefulness depends less on model novelty and more on context alignment, guardrails, and role clarity. In teacher support scenarios, the most valuable AI behaviour is not authoritative decision-making but structured, policy-aware assistance that helps professionals make better-informed choices.
+Another major reflection concerns responsible AI use in education. Integrating an external assistant highlighted that usefulness depends less on model novelty and more on context alignment, guardrails, and role clarity. In teacher support scenarios, the most valuable AI behaviour is not authoritative decision-making but structured advisory assistance that helps professionals make better-informed choices.
 
 Future development priorities are clear. First, introduce automated regression tests for authentication, authorization, messaging, notification routing, and attendance sync payload validation. Second, improve data and governance readiness for sensitive modules through retention controls, audit trails, and stronger administrative policy tooling. Third, replace or augment mesh call topology with scalable media infrastructure if larger group calling becomes a requirement. Fourth, extend wellbeing assistant evaluation with consistency rubrics and supervised quality review processes. Fifth, strengthen attendance evaluation through robustness and fairness benchmarking under varied real-world conditions.
 
 In conclusion, Teacher Feature Hub meets its central aim: it demonstrates an integrated educational digital platform that improves workflow continuity across communication, attendance, and wellbeing support while remaining practical for final-year implementation constraints. The project contributes a functional, critically evaluated prototype with clear educational relevance, sound engineering structure, and realistic awareness of what must be improved for production-level adoption. It therefore represents both a successful completion of the project brief and a strong foundation for future institutional-scale development.
 
-Most importantly, this links directly back to the original problem of workflow fragmentation in educational practice. The final system shows that integrating communication, attendance integrity, and policy-grounded wellbeing guidance in one environment can reduce operational discontinuity while preserving teacher-centred decision-making.
+Most importantly, this links directly back to the original problem of workflow fragmentation in educational practice. The final system shows that integrating communication, attendance integrity, and wellbeing-support access in one environment can reduce operational discontinuity while preserving teacher-centred decision-making.
+
+Table 6 summarizes objective-level outcomes using only evidence already presented in this report.
+
+| Project Objective (Section 1.2) | Achieved Outcome | Evidence in This Report | Status |
+|---|---|---|---|
+| Build a secure user and team collaboration foundation | Implemented secure authentication, team/channel structure, direct and channel messaging, file sharing, task management, and notifications | Sections 1.2, 6.2.1-6.2.4, 7.1, 8 | Achieved |
+| Implement facial-recognition attendance with practical persistence | Attendance moved from browser-only behaviour to backend sync and SQLite persistence with authenticated user context | Sections 1.2, 5.0, 6.2.8, 7.1, 8 | Achieved |
+| Integrate AI wellbeing support as teacher guidance (not autonomous decisions) | Assistant is embedded in-platform and framed as advisory, with explicit human-decision boundary | Sections 1.2, 5.4, 6.2.9, 7.1, 8 | Partially achieved |
+| Maintainability and demonstrable extensibility through modular architecture | Application factory, blueprint separation, and relationship-driven models support coherent extension; scale and governance limits are acknowledged | Sections 1.2, 5.1, 6.2.0, 6.2.11, 8 | Achieved with stated limitations |
+
+Table 6: Project objectives vs achieved outcomes.
 
 Word Count: 1057
 
@@ -766,7 +881,7 @@ Sommerville, I. (2015) Software Engineering. 10th edn. Harlow: Pearson.
 
 ## 11. Appendix
 
-### Appendix I: Requirements Specification Table
+### Appendix A: Requirements Specification Table
 
 | Req ID | Requirement Category | Description | Verification Test ID |
 | :--- | :--- | :--- | :--- |
@@ -777,44 +892,53 @@ Sommerville, I. (2015) Software Engineering. 10th edn. Harlow: Pearson.
 | **FR5** | Document & Task Flow | Access-controlled team file uploads and task tracking (assignee, status, priority, due dates). | T17, T18, T19, T20 |
 | **FR6** | Synchronous Communication | One-to-one and group video/audio call lifecycle state routing coupled with WebRTC signaling tracks. | T21, T22 |
 | **FR7** | Attendance Biometrics | Client-side facial descriptor processing synchronized and persisted to the backend database via a structured JSON API. | T23, T24, T25 |
-| **FR8** | Decision Support System | Policy-grounded AI Wellbeing Assistant bounded by system instructions and localized school guidelines. | T26, T27 |
+| **FR8** | Decision Support System | Embedded AI Wellbeing Assistant page for advisory guidance with human-decision boundary. | Manual exploratory checks (not automated in this pass) |
 | **NFR1** | Security by Design | Route-level authorization guards preventing data exposure or cross-tenant contamination between teams. | T05, T09, T13, T18, T22 |
 | **NFR2** | Extensibility | Loose structural coupling achieved via modular Flask Blueprints and explicit database relationships. | Section 5 & 6 |
 | **NFR3** | Data Sovereignty | Complete local storage architecture running entirely within self-hosted SQLite files. | Section 2.3 & 3 |
 | **NFR4** | Usability Continuity | Automated recovery of face roster states across session refresh and server restart via synchronization routes and stable SQLite path resolution. | T25 |
 
-### Appendix A: Requirements Summary
-- Include final requirement list mapped to implemented features.
-- Include MoSCoW or priority classification if used.
+### Appendix B: Requirements Summary
+Final requirements are documented in Appendix A as FR1-FR8 and NFR1-NFR4, each mapped to verification evidence.
 
-### Appendix B: Key Screenshots
+Requirements summary by category:
+- Functional requirements implemented: FR1, FR2, FR3, FR4, FR5, FR6, FR7, FR8.
+- Non-functional requirements documented: NFR1, NFR2, NFR3, NFR4.
+
+Priority classification (MoSCoW):
+- Must have: authentication/session security, team/channel messaging, attendance sync persistence, core authorization checks.
+- Should have: tasks/files workflow, notifications, one-to-one and group call lifecycle routes.
+- Could have: stronger analytics and additional governance tooling.
+- Won't have (in current submission): production-scale load architecture, controlled biometric fairness benchmark suite, deterministic local wellbeing-model pipeline.
+
+### Appendix C: Key Screenshots
 - Hub landing page after authentication.
 - Team dashboard and notifications page.
 - Channel messaging and direct messaging pages.
 - Task and file workflow pages.
 - Call room page.
 - Face attendance page.
-- Wellbeing assistant page showing policy-guided response style.
+- Wellbeing assistant page showing embedded advisory chatbot access.
 
-### Appendix C: Key Code Extracts
+### Appendix D: Key Code Extracts
 - App factory initialization and blueprint registration.
 - Authorization checks in messaging/team routes.
 - Notification destination mapping logic.
 - Face-student sync API endpoints.
-- Wellbeing assistant instruction + knowledge source integration snippet.
+- Wellbeing assistant embed integration snippet (`mental-health/index.html`).
 
-### Appendix D: GitHub Repository Link
+### Appendix E: GitHub Repository Link
 - Add final repository URL.
 - Add commit/tag for submitted version.
 
-### Appendix E: Demo Video
+### Appendix F: Demo Video
 - Add demo video URL.
 - Include timestamped chapter markers by feature.
 
-### Appendix F: Submission Readiness Checklist
+### Appendix G: Submission Readiness Checklist
 - Confirm Student Number in title page.
 - Confirm Supervisor Name in title page.
-- Recalculate and confirm final total word count after all edits.
+- Final total word count recalculated: 15,264.
 - Insert final GitHub repository URL and submission commit/tag.
 - Insert final demo video link and verify access permissions.
 - Export final report to PDF and verify heading/figure/table numbering.

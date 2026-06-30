@@ -48,6 +48,24 @@ The **Team Collaboration Platform** is a complete, fully functional web applicat
 
 ---
 
+### Session 12 - Expanded Functionality Summary in README Files (2026-06-30)
+
+**SUCCESS:** Added a clearer and more complete summary describing all major platform functions for reviewers and examiners.
+
+**What was completed:**
+
+1. Expanded root README with a "Complete Functionality Summary" section.
+2. Expanded `Teams com/README.md` with a "Detailed Functionality Overview" section.
+3. Broke down functionality into clear, review-friendly blocks (auth, teams, channels, messaging, files, tasks, notifications, calls/transcripts, search, reliability).
+
+**Decision diary (plain-English, including mistakes/fixes):**
+
+1. The earlier summary was accurate but too compact for someone wanting every function area explained quickly.
+2. I kept the new sections descriptive but still concise to avoid overwhelming readers with implementation detail in the opening docs.
+3. I mirrored both root and internal README coverage so GitHub landing readers and in-project readers get consistent understanding.
+
+---
+
 ## Recent Updates
 
 ### Session 9 - End-to-End Reliability, Cleanup, and Deployment Hardening COMPLETED (2026-06-30)

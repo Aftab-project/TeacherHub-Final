@@ -6,6 +6,56 @@ A modern, web-based team collaboration platform inspired by Microsoft Teams, bui
 
 This project is a full-stack collaboration platform for university group work and team communication. It includes authentication, team and channel management, direct and channel messaging, file sharing, task tracking, notifications, and call/transcription-related workflows in a modular Flask application.
 
+## Detailed Functionality Overview
+
+1. Authentication functions
+	- Register new users, authenticate logins, and manage logout sessions.
+	- Securely hash passwords and protect authenticated routes.
+
+2. User profile functions
+	- View and edit profile information.
+	- Keep account-level identity data for teams and messaging.
+
+3. Team functions
+	- Create teams, configure team settings, and manage team membership.
+	- Join teams via invite code and enforce team-level permissions.
+
+4. Channel functions
+	- Create channels inside teams for structured communication.
+	- Validate channel names and keep channel-level message history.
+
+5. Channel messaging functions
+	- Send messages, edit messages, delete messages, and paginate history.
+	- Support both browser form flow and AJAX flow where needed.
+
+6. Direct messaging functions
+	- Open user-to-user conversations and exchange private messages.
+	- Store direct message history and connect to notification events.
+
+7. Mention and notification functions
+	- Detect mentions in messages and notify the correct users.
+	- Deliver additional notifications for assignments and team activities.
+
+8. File management functions
+	- Upload files to team or channel contexts.
+	- Download files with access checks and keep file metadata.
+
+9. Task management functions
+	- Create tasks, assign owners, and set status, priority, and due dates.
+	- Track task progress across a team workflow.
+
+10. Call and transcript functions
+	- Support call-related interactions and transcript recording.
+	- Retrieve transcript history for review and continuity.
+
+11. Search functions
+	- Search channel content by keyword.
+	- Return paginated results for better performance.
+
+12. Reliability and deployment functions
+	- Include test coverage, startup role seeding, and health check endpoint.
+	- Keep production readiness through dependency and config management.
+
 ## How To Run
 
 Use these steps from the `Teams com/` folder:

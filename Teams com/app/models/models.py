@@ -134,7 +134,8 @@ class User(UserMixin, db.Model):
     teams = db.relationship(
         'Team',                           # Related model
         secondary='team_members',         # Join table
-        back_populates='members'          # Two-way relationship
+        back_populates='members',         # Two-way relationship
+        overlaps='team_members,user,team'  # Shared join table path
     )
     
     # What messages did this user send?
@@ -173,7 +174,11 @@ class User(UserMixin, db.Model):
     # Notifications for this user
     notifications = db.relationship('Notification', back_populates='user')
     # TeamMember records for this user
-    team_members = db.relationship('TeamMember', back_populates='user')
+    team_members = db.relationship(
+        'TeamMember',
+        back_populates='user',
+        overlaps='teams,members'
+    )
     
     def set_password(self, password):
         """
@@ -356,7 +361,8 @@ class Team(db.Model):
     members = db.relationship(
         'User',
         secondary='team_members',  # Join table
-        back_populates='teams'      # Two-way relationship
+        back_populates='teams',      # Two-way relationship
+        overlaps='team_members,user,team'
     )
     
     # What channels are in this team? (one-to-many with Channel)
@@ -386,7 +392,8 @@ class Team(db.Model):
     team_members = db.relationship(
         'TeamMember',
         back_populates='team',
-        cascade='all, delete-orphan'  # Delete team members when team deleted
+        cascade='all, delete-orphan',  # Delete team members when team deleted
+        overlaps='members,teams'
     )
     
     def __repr__(self):
@@ -460,13 +467,15 @@ class TeamMember(db.Model):
     # The Team this membership belongs to
     team = db.relationship(
         'Team',
-        back_populates='team_members'
+        back_populates='team_members',
+        overlaps='members,teams'
     )
     
     # The User this membership belongs to
     user = db.relationship(
         'User',
-        back_populates='team_members'
+        back_populates='team_members',
+        overlaps='members,teams'
     )
     
     # The Role this user has in this team
@@ -538,8 +547,8 @@ class Message(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text, nullable=False)
-    channel_id = db.Column(db.Integer, db.ForeignKey('channels.id'), nullable=False)
-    sender_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    channel_id = db.Column(db.Integer, db.ForeignKey('channels.id'), nullable=False, index=True)
+    sender_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     is_edited = db.Column(db.Boolean, default=False)
@@ -547,6 +556,12 @@ class Message(db.Model):
     # Relationships
     channel = db.relationship('Channel', back_populates='messages')
     sender = db.relationship('User', back_populates='messages', foreign_keys=[sender_id])
+    
+    # Performance optimization: indexes for common queries
+    __table_args__ = (
+        db.Index('ix_message_channel_created', 'channel_id', 'created_at'),
+        db.Index('ix_message_sender_created', 'sender_id', 'created_at'),
+    )
     
     def __repr__(self):
         return f'<Message {self.id} by {self.sender.username}>'
@@ -705,7 +720,7 @@ class CallTranscript(db.Model):
     - call_id: The call this transcript belongs to
     - speaker_id: User whose speech was captured
     - text: The transcribed text segment
-    - timestamp: When the segment was captured
+    - timestamp: When the segment was captured (for ordering)
     - summary: Full extractive summary (stored on the Call row but aggregated here)
     """
 
@@ -713,13 +728,20 @@ class CallTranscript(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     call_id = db.Column(db.Integer, db.ForeignKey('calls.id'), nullable=False, index=True)
-    speaker_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    speaker_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
     text = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    timestamp = db.Column(db.Float, default=0.0, index=True)  # Added for chronological ordering
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
 
     # Relationships
     call = db.relationship('Call', foreign_keys=[call_id], backref='transcripts')
     speaker = db.relationship('User', foreign_keys=[speaker_id])
+
+    # Performance optimization: composite indexes for common queries
+    __table_args__ = (
+        db.Index('ix_call_transcript_timestamp', 'call_id', 'timestamp'),
+        db.Index('ix_call_transcript_speaker', 'speaker_id', 'created_at'),
+    )
 
     def __repr__(self):
         return f'<CallTranscript call={self.call_id} speaker={self.speaker_id}>'

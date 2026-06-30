@@ -1,0 +1,49 @@
+# Python Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Pytest & Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.hypothesis/
+
+# Flask Instance Folder
+instance/
+.env
+
+# Generated Data & Uploads
+uploads/
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Temporary Files
+*.tmp
+*.temp
+*.log
+
+# Build Artifacts
+build/
+dist/
+*.egg-info/
+
+# Performance Data (keep in repo if submitted, but exclude from git if testing locally)
+# tests/artifacts/performance/ - OPTIONAL: exclude if iterating locally

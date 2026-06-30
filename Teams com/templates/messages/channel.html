@@ -49,10 +49,8 @@
                         <!-- Owner-only message actions -->
                         {% if message.sender_id == current_user.id %}
                         <div class="message-actions">
-                            <button onclick="editMessage({{ message.id }})" class="btn btn-sm btn-secondary">Edit</button>
-                            <form method="POST" action="{{ url_for('messages.delete_message', message_id=message.id) }}" style="display: inline;">
-                                <button type="submit" class="btn btn-sm btn-secondary" onclick="return confirm('Delete this message?')">Delete</button>
-                            </form>
+                            <button onclick="editMessage({{ message.id }}, {{ message.content|tojson }})" class="btn btn-sm btn-secondary" type="button">Edit</button>
+                            <button class="btn btn-sm btn-secondary" type="button" onclick="deleteMessage({{ message.id }})">Delete</button>
                         </div>
                         {% endif %}
                     </div>
@@ -79,4 +77,59 @@
         </div>
     </div>
 </div>
+
+<script>
+async function editMessage(messageId, currentContent) {
+    const next = prompt('Edit your message:', currentContent || '');
+    if (next === null) {
+        return;
+    }
+
+    const content = next.trim();
+    if (!content) {
+        alert('Message cannot be empty.');
+        return;
+    }
+
+    const body = new URLSearchParams({ content });
+
+    const response = await fetch(`/messages/${messageId}/edit`, {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+        },
+        body
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+        alert(data.error || 'Unable to edit message.');
+        return;
+    }
+
+    window.location.reload();
+}
+
+async function deleteMessage(messageId) {
+    if (!confirm('Delete this message?')) {
+        return;
+    }
+
+    const response = await fetch(`/messages/${messageId}/delete`, {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+        alert(data.error || 'Unable to delete message.');
+        return;
+    }
+
+    window.location.reload();
+}
+</script>
 {% endblock %}

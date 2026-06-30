@@ -15,6 +15,7 @@ from app.models import (
 )
 import string
 import random
+import re
 
 # ===== BLUEPRINT SETUP =====
 # All endpoints in this file are under /teams/*
@@ -25,8 +26,14 @@ def generate_team_code(length=8):
     """Generate random team invitation code."""
     # Uppercase letters + digits keeps code short and easy to share verbally
     chars = string.ascii_uppercase + string.digits
-    # Example output: P7Q9K2AB
-    return ''.join(random.choice(chars) for _ in range(length))
+    # Retry a few times to avoid collisions on unique team_code.
+    for _ in range(10):
+        code = ''.join(random.choice(chars) for _ in range(length))
+        if not Team.query.filter_by(team_code=code).first():
+            return code
+
+    # Fallback in the unlikely case of repeated collisions.
+    return ''.join(random.choice(chars) for _ in range(length + 2))
 
 
 @bp.route('/')
@@ -221,6 +228,9 @@ def remove_member(team_id, user_id):
     
     if not current_member or current_member.role.name != 'admin':
         return jsonify({'error': 'Unauthorized'}), 403
+
+    if user_id == team.owner_id:
+        return jsonify({'error': 'Cannot remove team owner'}), 400
     
     # Remove membership join-record (not user account)
     member = TeamMember.query.filter_by(
@@ -249,6 +259,11 @@ def join_team(team_id):
     
     team = Team.query.get_or_404(team_id)
     
+    # Allow direct joins only for public teams.
+    if not team.is_public:
+        flash('This team is private. Use an invite code or invitation.', 'error')
+        return redirect(url_for('teams.join_by_code'))
+
     # Check if already member
     existing = TeamMember.query.filter_by(
         team_id=team_id,
@@ -366,6 +381,14 @@ def create_channel(team_id):
     # Validation
     if not name or len(name) < 2:
         flash('Channel name must be at least 2 characters.', 'error')
+        return redirect(url_for('teams.view_team', team_id=team_id))
+
+    if len(name) > 50:
+        flash('Channel name must be 50 characters or less.', 'error')
+        return redirect(url_for('teams.view_team', team_id=team_id))
+
+    if not re.fullmatch(r'[a-z0-9-]+', name):
+        flash('Channel names can only contain lowercase letters, numbers, and hyphens.', 'error')
         return redirect(url_for('teams.view_team', team_id=team_id))
     
     # Check uniqueness within team

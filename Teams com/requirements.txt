@@ -8,3 +8,4 @@ werkzeug==3.0.1
 Flask-SocketIO==5.3.5
 python-socketio==5.10.0
 python-engineio==4.8.0
+gunicorn==23.0.0

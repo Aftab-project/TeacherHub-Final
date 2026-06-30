@@ -2,6 +2,31 @@
 
 A modern, web-based team collaboration platform inspired by Microsoft Teams, built with Flask and SQLite.
 
+## Summary
+
+This project is a full-stack collaboration platform for university group work and team communication. It includes authentication, team and channel management, direct and channel messaging, file sharing, task tracking, notifications, and call/transcription-related workflows in a modular Flask application.
+
+## How To Run
+
+Use these steps from the `Teams com/` folder:
+
+```bash
+# 1) Create and activate a virtual environment
+python -m venv venv
+venv\Scripts\activate
+
+# 2) Install dependencies
+pip install -r requirements.txt
+
+# 3) (Optional but recommended) create environment file
+copy .env.example .env
+
+# 4) Start the app
+python app.py
+```
+
+Open `http://localhost:5000` in your browser.
+
 ## Features
 
 ### ✅ Implemented Features
@@ -337,7 +362,7 @@ pip install -r requirements.txt --force-reinstall
 
 For production deployment:
 
-1. **Use production WSGI server** (Gunicorn, uWSGI)
+1. **Use production process manager** (Gunicorn + reverse proxy)
 2. **Enable HTTPS** (required for secure cookies)
 3. **Use strong SECRET_KEY**
 4. **Configure proper database** (PostgreSQL recommended)
@@ -345,12 +370,15 @@ For production deployment:
 6. **Enable logging and monitoring**
 7. **Set FLASK_ENV=production**
 8. **Use environment secrets management**
+9. **Add health check path** using `/healthz`
 
-Example with Gunicorn:
+Example command (app factory):
 
 ```bash
-gunicorn --workers 4 --bind 0.0.0.0:5000 "app:app"
+gunicorn --factory --workers 2 --threads 4 --bind 0.0.0.0:5000 app:create_app
 ```
+
+If you need full WebSocket-heavy traffic for calls, run through a Socket.IO compatible stack and validate call signaling in staging before release.
 
 ## Contributing
 

@@ -15,7 +15,7 @@ Why an "app factory" function instead of creating app directly?
 """
 
 # Import Flask - the web framework
-from flask import Flask
+from flask import Flask, jsonify
 # Import LoginManager - handles user login/sessions
 from flask_login import LoginManager
 # Import SocketIO - enables real-time features (video calls, WebRTC signaling)
@@ -140,26 +140,21 @@ def create_app():
                 # Save the change
                 _conn.commit()
         
-        # Create default roles if they don't exist yet
-        # (only on first run)
-        if Role.query.count() == 0:
-            # Create admin role
-            admin_role = Role(
-                name='admin',
-                description='Team administrator with full permissions'
-            )
-            # Create member role
-            member_role = Role(
-                name='member',
-                description='Regular team member'
-            )
-            # Add to database
-            db.session.add(admin_role)
-            db.session.add(member_role)
-            # Save to database
+        # Create any missing default roles (idempotent).
+        required_roles = {
+            'admin': 'Team administrator with full permissions',
+            'member': 'Regular team member'
+        }
+
+        created_any_role = False
+        for role_name, description in required_roles.items():
+            if not Role.query.filter_by(name=role_name).first():
+                db.session.add(Role(name=role_name, description=description))
+                created_any_role = True
+
+        if created_any_role:
             db.session.commit()
-            # Print confirmation to terminal
-            print("✓ Default roles created: Admin, Member")
+            print("✓ Default roles verified: Admin, Member")
     
     # ===== CREATE UPLOADS FOLDER =====
     # Create /uploads folder if it doesn't exist
@@ -203,6 +198,11 @@ def create_app():
     register_socket_events(socketio)
     
     # ===== ERROR HANDLERS =====
+    @app.get('/healthz')
+    def healthz():
+        """Kubernetes/hosting health probe endpoint."""
+        return jsonify({'status': 'ok'}), 200
+
     # What to do if user tries to access a page that doesn't exist?
     @app.errorhandler(404)
     def not_found(error):

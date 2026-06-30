@@ -744,21 +744,21 @@ def add_transcript_segment(call_token):
 @login_required
 def get_transcript(call_token):
     """
-    Fetch all transcript segments for a call.
+    Fetch transcript segments for a call (optimized with pagination).
     
-    Endpoint: GET /calls/<call_token>/transcript
+    Endpoint: GET /calls/<call_token>/transcript?page=1&per_page=50
+    
+    Optimizations:
+    - Uses database indexes on call_id and timestamp
+    - Pagination reduces memory usage for large transcripts
+    - Compound index lookup: (call_id, timestamp)
     
     Response:
     {
-        'segments': [
-            {
-                'id': int,
-                'speaker': 'username',
-                'text': 'what they said',
-                'time': '14:23:45'
-            },
-            ...
-        ],
+        'segments': [...],
+        'total': int,
+        'page': int,
+        'per_page': int,
         'summary': 'AI-generated summary if available'
     }
     """
@@ -771,9 +771,20 @@ def get_transcript(call_token):
     if call.caller_id != current_user.id and call.callee_id != current_user.id:
         return jsonify({'error': 'Unauthorized'}), 403
 
-    # Get all transcript segments in order
-    segments = CallTranscript.query.filter_by(call_id=call.id)\
-        .order_by(CallTranscript.created_at).all()
+    # Pagination parameters
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 50, type=int)
+    per_page = min(per_page, 100)  # Cap at 100 per page
+    
+    # Get transcript segments using indexes (ordered by timestamp for chronological order)
+    query = CallTranscript.query.filter_by(call_id=call.id)\
+        .order_by(CallTranscript.timestamp)
+    
+    total = query.count()
+    
+    segments = query.limit(per_page)\
+        .offset((page - 1) * per_page)\
+        .all()
 
     return jsonify({
         'segments': [
@@ -781,10 +792,15 @@ def get_transcript(call_token):
                 'id': s.id,
                 'speaker': s.speaker.username,
                 'text': s.text,
+                'timestamp': s.timestamp,
                 'time': s.created_at.strftime('%H:%M:%S')
             }
             for s in segments
         ],
+        'total': total,
+        'page': page,
+        'per_page': per_page,
+        'total_pages': (total + per_page - 1) // per_page,
         'summary': call.summary or ''
     })
 

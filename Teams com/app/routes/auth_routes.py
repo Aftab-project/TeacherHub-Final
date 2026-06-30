@@ -159,6 +159,9 @@ def login():
                 flash('Account is disabled.', 'error')
                 return redirect(url_for('auth.login'))
             
+            # Enable persistent login (user stays logged in after browser restart)
+            session.permanent = True
+            
             # Create login session cookie
             login_user(user, remember=True)
             flash(f'Welcome back, {user.first_name or user.username}!', 'success')

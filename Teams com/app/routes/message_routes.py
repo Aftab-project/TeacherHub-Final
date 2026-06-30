@@ -19,6 +19,16 @@ from datetime import datetime
 bp = Blueprint('messages', __name__, url_prefix='/messages')
 
 
+def _wants_json_response():
+    """Return True when caller expects JSON (API/AJAX usage)."""
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return True
+    best = request.accept_mimetypes.best_match(['application/json', 'text/html'])
+    return best == 'application/json' and (
+        request.accept_mimetypes['application/json'] >= request.accept_mimetypes['text/html']
+    )
+
+
 def get_recent_dm_contacts(user_id, limit=30):
     """Get recent DM contacts with last message and unread count."""
 
@@ -145,16 +155,25 @@ def send_message(channel_id):
     
     # Authorization: must belong to team that owns this channel
     if team not in current_user.teams:
-        return jsonify({'error': 'Unauthorized'}), 403
+        if _wants_json_response():
+            return jsonify({'error': 'Unauthorized'}), 403
+        flash('You do not have access to this channel.', 'error')
+        return redirect(url_for('dashboard.index'))
     
     content = request.form.get('content', '').strip()
     
     # Validation
     if not content:
-        return jsonify({'error': 'Message cannot be empty'}), 400
+        if _wants_json_response():
+            return jsonify({'error': 'Message cannot be empty'}), 400
+        flash('Message cannot be empty.', 'error')
+        return redirect(url_for('messages.view_channel', channel_id=channel_id))
     
     if len(content) > 5000:
-        return jsonify({'error': 'Message too long (max 5000 characters)'}), 400
+        if _wants_json_response():
+            return jsonify({'error': 'Message too long (max 5000 characters)'}), 400
+        flash('Message too long (max 5000 characters).', 'error')
+        return redirect(url_for('messages.view_channel', channel_id=channel_id))
     
     # ===== CREATE MESSAGE =====
     message = Message(
@@ -182,11 +201,14 @@ def send_message(channel_id):
     
     db.session.commit()
     
-    return jsonify({
-        'success': True,
-        'message_id': message.id,
-        'created_at': message.created_at.isoformat()
-    })
+    if _wants_json_response():
+        return jsonify({
+            'success': True,
+            'message_id': message.id,
+            'created_at': message.created_at.isoformat()
+        })
+
+    return redirect(url_for('messages.view_channel', channel_id=channel_id))
 
 
 @bp.route('/<int:message_id>/edit', methods=['POST'])
@@ -204,12 +226,18 @@ def edit_message(message_id):
     
     # Authorization: only sender
     if message.sender_id != current_user.id:
-        return jsonify({'error': 'Unauthorized'}), 403
+        if _wants_json_response():
+            return jsonify({'error': 'Unauthorized'}), 403
+        flash('You can only edit your own messages.', 'error')
+        return redirect(url_for('messages.view_channel', channel_id=message.channel_id))
     
     content = request.form.get('content', '').strip()
     
     if not content or len(content) > 5000:
-        return jsonify({'error': 'Invalid content'}), 400
+        if _wants_json_response():
+            return jsonify({'error': 'Invalid content'}), 400
+        flash('Invalid message content.', 'error')
+        return redirect(url_for('messages.view_channel', channel_id=message.channel_id))
     
     # Save edited content and mark as edited for transparency
     message.content = content
@@ -217,7 +245,11 @@ def edit_message(message_id):
     message.updated_at = datetime.utcnow()
     db.session.commit()
     
-    return jsonify({'success': True})
+    if _wants_json_response():
+        return jsonify({'success': True})
+
+    flash('Message updated.', 'success')
+    return redirect(url_for('messages.view_channel', channel_id=message.channel_id))
 
 
 @bp.route('/<int:message_id>/delete', methods=['POST'])
@@ -229,14 +261,22 @@ def delete_message(message_id):
     
     # Authorization
     if message.sender_id != current_user.id:
-        # Could check if user is admin, but for now only sender can delete
-        return jsonify({'error': 'Unauthorized'}), 403
+        if _wants_json_response():
+            return jsonify({'error': 'Unauthorized'}), 403
+        flash('You can only delete your own messages.', 'error')
+        return redirect(url_for('messages.view_channel', channel_id=message.channel_id))
+
+    channel_id = message.channel_id
     
     # Hard-delete row from database
     db.session.delete(message)
     db.session.commit()
     
-    return jsonify({'success': True})
+    if _wants_json_response():
+        return jsonify({'success': True})
+
+    flash('Message deleted.', 'success')
+    return redirect(url_for('messages.view_channel', channel_id=channel_id))
 
 
 @bp.route('/direct/<int:user_id>')
@@ -284,12 +324,18 @@ def send_dm(user_id):
     recipient = User.query.get_or_404(user_id)
     
     if recipient.id == current_user.id:
-        return jsonify({'error': 'Cannot message yourself'}), 400
+        if _wants_json_response():
+            return jsonify({'error': 'Cannot message yourself'}), 400
+        flash('You cannot message yourself.', 'error')
+        return redirect(url_for('messages.direct_hub'))
     
     content = request.form.get('content', '').strip()
     
     if not content or len(content) > 5000:
-        return jsonify({'error': 'Invalid content'}), 400
+        if _wants_json_response():
+            return jsonify({'error': 'Invalid content'}), 400
+        flash('Invalid direct message content.', 'error')
+        return redirect(url_for('messages.view_dm', user_id=user_id))
     
     # Create DM row
     dm = DirectMessage(
@@ -297,6 +343,8 @@ def send_dm(user_id):
         sender_id=current_user.id,
         recipient_id=user_id
     )
+    db.session.add(dm)
+    db.session.flush()
     
     # Notify recipient that a new private message arrived
     notification = Notification(
@@ -306,8 +354,7 @@ def send_dm(user_id):
         message=content[:50],
         related_id=dm.id
     )
-    
-    db.session.add(dm)
+
     db.session.add(notification)
     db.session.commit()
     
@@ -333,7 +380,7 @@ def find_mentions(content):
     # Resolve usernames to User objects that actually exist
     users = []
     for username in mentions:
-        user = User.query.filter_by(username=username).first()
+        user = User.query.filter(User.username.ilike(username)).first()
         if user:
             users.append(user)
     
@@ -343,15 +390,24 @@ def find_mentions(content):
 @bp.route('/api/messages/search')
 @login_required
 def api_search_messages():
-    """API: Search messages in accessible channels."""
+    """
+    API: Search messages in accessible channels (optimized with pagination).
+    
+    Optimizations implemented:
+    - Uses database indexes on channel_id and content search
+    - Pagination to reduce memory usage
+    - Compound index lookup: (channel_id, created_at)
+    """
     
     query = request.args.get('q', '').strip()
     team_id = request.args.get('team_id', type=int)
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
     
     if len(query) < 2:
-        return jsonify([])
+        return jsonify({'messages': [], 'total': 0, 'page': page})
     
-    # Restrict search to channels user can access
+    # Build base query using index-optimized conditions
     q = Message.query.filter(
         Message.channel.has(
             Channel.team.has(
@@ -361,17 +417,29 @@ def api_search_messages():
         Message.content.ilike(f'%{query}%')
     )
     
-    # Optional scope: single team
+    # Optional scope: single team (uses index)
     if team_id:
         q = q.filter(Message.channel.has(Channel.team_id == team_id))
     
-    # Return newest 20 matches
-    messages = q.order_by(Message.created_at.desc()).limit(20).all()
+    # Count total matches
+    total = q.count()
     
-    return jsonify([{
-        'id': m.id,
-        'content': m.content[:100],
-        'sender': m.sender.username,
-        'channel': m.channel.name,
-        'created_at': m.created_at.isoformat()
-    } for m in messages])
+    # Return paginated results (newest first, using index)
+    messages = q.order_by(Message.created_at.desc())\
+        .limit(per_page)\
+        .offset((page - 1) * per_page)\
+        .all()
+    
+    return jsonify({
+        'messages': [{
+            'id': m.id,
+            'content': m.content[:100],
+            'sender': m.sender.username,
+            'channel': m.channel.name,
+            'created_at': m.created_at.isoformat()
+        } for m in messages],
+        'total': total,
+        'page': page,
+        'per_page': per_page,
+        'total_pages': (total + per_page - 1) // per_page
+    })

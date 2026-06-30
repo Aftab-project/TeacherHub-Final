@@ -89,11 +89,19 @@ class Config:
     # Don't warn about modifications to models
     # (cleaner output when running)
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    # Keep scalar attributes available after commit (helps with fixture handoffs
+    # and reduces detached-instance surprises in route/service code).
+    SQLALCHEMY_SESSION_OPTIONS = {'expire_on_commit': False}
     
     # ===== SESSION SETTINGS (login cookies) =====
     # How long does a user stay logged in?
     # 24 * 60 * 60 = 24 hours (in seconds)
     PERMANENT_SESSION_LIFETIME = 24 * 60 * 60
+    
+    # "Remember me" cookie duration
+    # 30 * 24 * 60 * 60 = 30 days (in seconds)
+    # Users will stay logged in for 30 days even after closing browser
+    REMEMBER_COOKIE_DURATION = 30 * 24 * 60 * 60
     
     # Send cookie over HTTPS only? (False for dev, True for production)
     # HTTPS is encrypted, HTTP is not
@@ -107,6 +115,12 @@ class Config:
     # Only send cookie to OUR website, not other sites
     # Prevents CSRF (Cross-Site Request Forgery) attacks
     SESSION_COOKIE_SAMESITE = 'Lax'
+    
+    # Remember me cookie settings
+    # This cookie survives browser restart
+    REMEMBER_COOKIE_SECURE = False  # True in production
+    REMEMBER_COOKIE_HTTPONLY = True  # JavaScript can't read it
+    REMEMBER_COOKIE_SAMESITE = 'Lax'  # Only send to our site
     
     # ===== FILE UPLOAD SETTINGS =====
     # What's the maximum file size users can upload?

@@ -30,6 +30,24 @@ The **Team Collaboration Platform** is a complete, fully functional web applicat
 
 ---
 
+### Session 11 - Root README Visibility Fix for GitHub Landing Page (2026-06-30)
+
+**SUCCESS:** Added a repository-root README so GitHub now renders project information directly on the repo homepage.
+
+**What was completed:**
+
+1. Added root-level `README.md` in repository top folder.
+2. Included project summary, quick run steps, and links to main docs under `Teams com/`.
+3. Prepared this fix for immediate push so the GitHub homepage is no longer blank.
+
+**Decision diary (plain-English, including mistakes/fixes):**
+
+1. The previous README updates were inside `Teams com/README.md`, which does not appear as the default GitHub landing README.
+2. The missing root `README.md` was the actual cause of the issue, not a failed push.
+3. I kept the new root README short and pointed to the detailed internal documentation to avoid duplication drift.
+
+---
+
 ## Recent Updates
 
 ### Session 9 - End-to-End Reliability, Cleanup, and Deployment Hardening COMPLETED (2026-06-30)
